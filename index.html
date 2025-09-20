@@ -86,11 +86,18 @@
                         </div>
                          <button id="add-appointment-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">Add Appointment</button>
                     </div>
+                     <div class="mt-6 border-t border-gray-700 pt-4">
+                        <h3 class="text-lg font-semibold mb-3 text-center text-white">Export Fixed Appointments</h3>
+                        <div class="flex space-x-4">
+                            <button id="download-appointment-json-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Download JSON</button>
+                            <button id="download-appointment-sql-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Download SQL</button>
+                        </div>
+                    </div>
                 </div>
                 <!-- Display Section -->
                 <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
                     <h2 class="text-2xl font-semibold mb-4 text-white">Fixed Appointment List</h2>
-                    <div id="appointment-list-container" class="task-list space-y-3 h-[300px] overflow-y-auto pr-2"></div>
+                    <div id="appointment-list-container" class="task-list space-y-3 h-[380px] overflow-y-auto pr-2"></div>
                 </div>
             </div>
 
@@ -99,7 +106,7 @@
                  <h2 class="text-2xl font-semibold mb-4 text-white">Set Your Fixed Schedule (Legacy)</h2>
                 <div class="space-y-2 mb-6">
                     <label for="daily-appointments" class="block text-sm font-medium text-gray-300">Daily Mandatory Events</label>
-                    <textarea id="daily-appointments" rows="3" placeholder="e.g., Lunch from 11:30 to 12:30&#10;Piano + Coding from 14:45 to 15:15" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    <textarea id="daily-appointments" rows="6" placeholder="Upload a PDF below to auto-populate this field with your fixed schedule." class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                 </div>
                 <div class="space-y-2 mb-6">
                     <label for="pdf-upload" class="block text-sm font-medium text-gray-300">Fixed Appointment Schedule (PDF)</label>
@@ -121,6 +128,12 @@
         </div>
     </main>
     
+    <!-- PDF.js library from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js"></script>
+    
+    <!-- Your application script -->
     <script src="script.js"></script>
 </body>
 </html>
+

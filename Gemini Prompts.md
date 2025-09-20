@@ -1,3 +1,9 @@
+Good to add to the end of a prompt for a new feature
+
+Before you execute, explain to me in your own words how you understand the prompt, what you will do, and how you will implement it.
+
+
+
 Prompt 1
 
 Can you create a nextjs page that can be used to:
@@ -44,5 +50,8 @@ I want you to add another block on the page that will allow me to add/remove/edi
 
 
 
+prompt 5
+I want to be able to see my fixed appointments in the "daily mandatory events" block when I upload my fixed appointments pdf.
 
-
+* Fill out the daily mandatory events text block with the days, events, and times from the pdf.
+* Fill the check boxes of the days included in the pdf.

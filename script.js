@@ -28,6 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const addAppointmentBtn = document.getElementById('add-appointment-btn');
     const appointmentListContainer = document.getElementById('appointment-list-container');
     const appointmentFormTitle = document.getElementById('appointment-form-title');
+    const downloadApptJsonBtn = document.getElementById('download-appointment-json-btn');
+    const downloadApptSqlBtn = document.getElementById('download-appointment-sql-btn');
+
+
+    // Legacy / PDF Section
+    const pdfUploadInput = document.getElementById('pdf-upload');
+    const dailyAppointmentsTextarea = document.getElementById('daily-appointments');
     
     // --- HELPER FUNCTIONS ---
     const populateTimeDropdowns = () => {
@@ -46,16 +53,24 @@ document.addEventListener('DOMContentLoaded', () => {
         chunkMaxInput.selectedIndex = times.length - 1;
     };
     
-    const generateSQL = (taskArray) => {
+    const generateTaskSQL = (taskArray) => {
         if (taskArray.length === 0) return '-- No tasks to export.';
         const tableName = 'flexible_tasks';
         const header = `DROP TABLE IF EXISTS ${tableName};\nCREATE TABLE ${tableName} (\n    id BIGINT PRIMARY KEY,\n    task_name VARCHAR(255) NOT NULL,\n    total_time VARCHAR(50),\n    priority VARCHAR(50),\n    chunk_min VARCHAR(20),\n    chunk_max VARCHAR(20)\n);\n`;
         return header + taskArray.map(t => `INSERT INTO ${tableName} (id, task_name, total_time, priority, chunk_min, chunk_max) VALUES (${t.id}, '${t.name.replace(/'/g, "''")}', '${t.time}', '${t.priority}', '${t.chunkMin}', '${t.chunkMax}');`).join('\n');
     };
+    
+    const generateAppointmentSQL = (apptArray) => {
+        if (apptArray.length === 0) return '-- No appointments to export.';
+        const tableName = 'fixed_appointments';
+        const header = `DROP TABLE IF EXISTS ${tableName};\nCREATE TABLE ${tableName} (\n    id BIGINT PRIMARY KEY,\n    appointment_name VARCHAR(255) NOT NULL,\n    day_of_week VARCHAR(50),\n    start_time TIME,\n    end_time TIME\n);\n`;
+        return header + apptArray.map(a => `INSERT INTO ${tableName} (id, appointment_name, day_of_week, start_time, end_time) VALUES (${a.id}, '${a.name.replace(/'/g, "''")}', '${a.day}', '${a.start}', '${a.end}');`).join('\n');
+    };
 
-    const handleDownload = (content, fileName, mimeType) => {
-        if (flexibleTasks.length === 0) {
-            alert('No flexible tasks to download.');
+    const handleDownload = (content, fileName, mimeType, isAppointment = false) => {
+        const dataArray = isAppointment ? fixedAppointments : flexibleTasks;
+        if (dataArray.length === 0) {
+            alert(`No ${isAppointment ? 'fixed appointments' : 'flexible tasks'} to download.`);
             return;
         }
         const blob = new Blob([content], { type: mimeType });
@@ -129,19 +144,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const priority = priorityInput.value;
         const chunkMin = chunkMinInput.value;
         const chunkMax = chunkMaxInput.value;
-
         if (!name || !time || !priority) {
             alert('Please fill out Task Name, Total Time, and Priority.');
             return;
         }
         if (currentlyEditingTaskId !== null) {
             const taskIndex = flexibleTasks.findIndex(t => t.id === currentlyEditingTaskId);
-            if (taskIndex > -1) {
-                flexibleTasks[taskIndex] = { ...flexibleTasks[taskIndex], name, time, priority, chunkMin, chunkMax };
-            }
+            if (taskIndex > -1) flexibleTasks[taskIndex] = { ...flexibleTasks[taskIndex], name, time, priority, chunkMin, chunkMax };
         } else {
-            const newTask = { id: Date.now(), name, time, priority, chunkMin, chunkMax };
-            flexibleTasks.push(newTask);
+            flexibleTasks.push({ id: Date.now(), name, time, priority, chunkMin, chunkMax });
         }
         renderTasks();
         exitTaskEditMode();
@@ -159,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let [hours, minutes] = time.split(':');
         let ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
+        hours = hours ? hours : 12;
         return `${hours}:${minutes} ${ampm}`;
     };
     
@@ -219,25 +230,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const day = dayOfWeekInput.value;
         const start = startTimeInput.value;
         const end = endTimeInput.value;
-
         if (!name || !day || !start || !end) {
             alert('Please fill out all appointment fields.');
             return;
         }
         if (currentlyEditingAppointmentId !== null) {
             const apptIndex = fixedAppointments.findIndex(a => a.id === currentlyEditingAppointmentId);
-            if (apptIndex > -1) {
-                fixedAppointments[apptIndex] = { ...fixedAppointments[apptIndex], name, day, start, end };
-            }
+            if (apptIndex > -1) fixedAppointments[apptIndex] = { ...fixedAppointments[apptIndex], name, day, start, end };
         } else {
-            const newAppointment = { id: Date.now(), name, day, start, end };
-            fixedAppointments.push(newAppointment);
+            fixedAppointments.push({ id: Date.now(), name, day, start, end });
         }
-        fixedAppointments.sort((a, b) => { // Keep the list sorted
+        fixedAppointments.sort((a, b) => {
             const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-            if (days.indexOf(a.day) !== days.indexOf(b.day)) {
-                return days.indexOf(a.day) - days.indexOf(b.day);
-            }
+            if (days.indexOf(a.day) !== days.indexOf(b.day)) return days.indexOf(a.day) - days.indexOf(b.day);
             return a.start.localeCompare(b.start);
         });
         renderAppointments();
@@ -250,11 +255,50 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAppointments();
     };
 
+    // --- PDF PROCESSING LOGIC ---
+    const handlePdfUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file || file.type !== 'application/pdf') {
+            alert('Please select a valid PDF file.');
+            return;
+        }
+        const originalPlaceholder = dailyAppointmentsTextarea.placeholder;
+        dailyAppointmentsTextarea.placeholder = 'Reading and processing PDF...';
+        dailyAppointmentsTextarea.value = '';
+        try {
+            const fileReader = new FileReader();
+            fileReader.onload = async function() {
+                const typedarray = new Uint8Array(this.result);
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n\n';
+                }
+                dailyAppointmentsTextarea.value = fullText.trim();
+                dailyAppointmentsTextarea.placeholder = originalPlaceholder;
+            };
+            fileReader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.error('Error processing PDF:', error);
+            alert('Failed to process the PDF file.');
+            dailyAppointmentsTextarea.placeholder = originalPlaceholder;
+        }
+    };
+
     // --- EVENT LISTENERS ---
     addTaskBtn.addEventListener('click', handleTaskFormSubmit);
-    downloadJsonBtn.addEventListener('click', () => handleDownload(JSON.stringify(flexibleTasks, null, 2), 'tasks.json', 'application/json'));
-    downloadSqlBtn.addEventListener('click', () => handleDownload(generateSQL(flexibleTasks), 'tasks.sql', 'application/sql'));
+    downloadJsonBtn.addEventListener('click', () => handleDownload(JSON.stringify(flexibleTasks, null, 2), 'tasks.json', 'application/json', false));
+    downloadSqlBtn.addEventListener('click', () => handleDownload(generateTaskSQL(flexibleTasks), 'tasks.sql', 'application/sql', false));
+    
     addAppointmentBtn.addEventListener('click', handleAppointmentFormSubmit);
+    downloadApptJsonBtn.addEventListener('click', () => handleDownload(JSON.stringify(fixedAppointments, null, 2), 'appointments.json', 'application/json', true));
+    downloadApptSqlBtn.addEventListener('click', () => handleDownload(generateAppointmentSQL(fixedAppointments), 'appointments.sql', 'application/sql', true));
+    
+    pdfUploadInput.addEventListener('change', handlePdfUpload);
 
     // --- INITIALIZATION ---
     populateTimeDropdowns();
