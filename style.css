@@ -31,7 +31,12 @@ input[type="checkbox"]:focus {
 }
 
 /* Add a hover effect for editable tasks */
-.task-item:hover {
+.task-item:hover, .appointment-item:hover {
     background-color: #4a5568; /* gray-600 */
+}
+
+/* Style for time input color scheme */
+input[type="time"] {
+    color-scheme: dark;
 }
 

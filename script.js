@@ -2,10 +2,13 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- STATE MANAGEMENT ---
-    let tasks = [];
-    let currentlyEditingId = null; // null for new, holds ID for editing
+    let flexibleTasks = [];
+    let fixedAppointments = [];
+    let currentlyEditingTaskId = null;
+    let currentlyEditingAppointmentId = null;
 
     // --- DOM ELEMENT REFERENCES ---
+    // Flexible Tasks
     const taskNameInput = document.getElementById('task-name-input');
     const totalTimeInput = document.getElementById('total-time-input');
     const priorityInput = document.getElementById('priority-input');
@@ -15,7 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const taskListContainer = document.getElementById('task-list-container');
     const downloadJsonBtn = document.getElementById('download-json-btn');
     const downloadSqlBtn = document.getElementById('download-sql-btn');
-    const formTitle = document.getElementById('form-title');
+    const taskFormTitle = document.getElementById('form-title');
+
+    // Fixed Appointments
+    const appointmentNameInput = document.getElementById('appointment-name-input');
+    const dayOfWeekInput = document.getElementById('day-of-week-input');
+    const startTimeInput = document.getElementById('start-time-input');
+    const endTimeInput = document.getElementById('end-time-input');
+    const addAppointmentBtn = document.getElementById('add-appointment-btn');
+    const appointmentListContainer = document.getElementById('appointment-list-container');
+    const appointmentFormTitle = document.getElementById('appointment-form-title');
     
     // --- HELPER FUNCTIONS ---
     const populateTimeDropdowns = () => {
@@ -42,8 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const handleDownload = (content, fileName, mimeType) => {
-        if (tasks.length === 0) {
-            alert('No tasks to download.');
+        if (flexibleTasks.length === 0) {
+            alert('No flexible tasks to download.');
             return;
         }
         const blob = new Blob([content], { type: mimeType });
@@ -57,35 +69,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const getPriorityClass = (priority) => ({'High': 'text-red-400', 'Medium': 'text-yellow-400', 'Low': 'text-green-400'}[priority] || 'text-gray-400');
 
-    // --- CORE LOGIC ---
-    const enterEditMode = (id) => {
-        const taskToEdit = tasks.find(t => t.id === id);
+    // --- FLEXIBLE TASK LOGIC ---
+    const enterTaskEditMode = (id) => {
+        const taskToEdit = flexibleTasks.find(t => t.id === id);
         if (!taskToEdit) return;
-
-        currentlyEditingId = id;
-        formTitle.textContent = 'Edit Task';
-        
+        currentlyEditingTaskId = id;
+        taskFormTitle.textContent = 'Edit Flexible Task';
         taskNameInput.value = taskToEdit.name;
         totalTimeInput.value = taskToEdit.time;
         priorityInput.value = taskToEdit.priority;
         chunkMinInput.value = taskToEdit.chunkMin;
         chunkMaxInput.value = taskToEdit.chunkMax;
-
         addTaskBtn.textContent = 'Update Task';
         addTaskBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
         addTaskBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
     };
 
-    const exitEditMode = () => {
-        currentlyEditingId = null;
-        formTitle.textContent = 'Create New Task';
-
+    const exitTaskEditMode = () => {
+        currentlyEditingTaskId = null;
+        taskFormTitle.textContent = 'Create Flexible Task';
         taskNameInput.value = '';
         totalTimeInput.value = '';
         priorityInput.value = '';
         chunkMinInput.selectedIndex = 0;
         chunkMaxInput.selectedIndex = chunkMaxInput.options.length - 1;
-
         addTaskBtn.textContent = 'Add Task';
         addTaskBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
         addTaskBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
@@ -93,37 +100,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderTasks = () => {
         taskListContainer.innerHTML = '';
-        if (tasks.length === 0) {
-            taskListContainer.innerHTML = `<div class="text-center text-gray-500 pt-20"><p>No tasks added yet.</p></div>`;
+        if (flexibleTasks.length === 0) {
+            taskListContainer.innerHTML = `<div class="text-center text-gray-500 pt-20"><p>No flexible tasks added yet.</p></div>`;
             return;
         }
-        tasks.forEach(task => {
+        flexibleTasks.forEach(task => {
             const taskElement = document.createElement('div');
             taskElement.className = 'task-item bg-gray-700 p-4 rounded-md flex justify-between items-start cursor-pointer transition-colors duration-200';
-            taskElement.addEventListener('click', () => enterEditMode(task.id));
-
+            taskElement.addEventListener('click', () => enterTaskEditMode(task.id));
             const infoContainer = document.createElement('div');
-            infoContainer.innerHTML = `
-                <p class="font-bold text-white">${task.name}</p>
-                <p class="text-sm text-gray-300">Total: ${task.time} | Chunks: ${task.chunkMin} to ${task.chunkMax}</p>
-                <p class="text-sm font-semibold ${getPriorityClass(task.priority)}">${task.priority} Priority</p>
-            `;
-
+            infoContainer.innerHTML = `<p class="font-bold text-white">${task.name}</p><p class="text-sm text-gray-300">Total: ${task.time} | Chunks: ${task.chunkMin} to ${task.chunkMax}</p><p class="text-sm font-semibold ${getPriorityClass(task.priority)}">${task.priority} Priority</p>`;
             const removeButton = document.createElement('button');
             removeButton.innerHTML = '&times;';
             removeButton.className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md transition duration-300 flex-shrink-0 ml-4';
             removeButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevents the edit click from firing
+                e.stopPropagation();
                 handleRemoveTask(task.id);
             });
-            
             taskElement.appendChild(infoContainer);
             taskElement.appendChild(removeButton);
             taskListContainer.appendChild(taskElement);
         });
     };
     
-    const handleFormSubmit = () => {
+    const handleTaskFormSubmit = () => {
         const name = taskNameInput.value.trim();
         const time = totalTimeInput.value.trim();
         const priority = priorityInput.value;
@@ -134,46 +134,131 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please fill out Task Name, Total Time, and Priority.');
             return;
         }
-        
-        if (currentlyEditingId !== null) {
-            // Update existing task
-            const taskIndex = tasks.findIndex(t => t.id === currentlyEditingId);
+        if (currentlyEditingTaskId !== null) {
+            const taskIndex = flexibleTasks.findIndex(t => t.id === currentlyEditingTaskId);
             if (taskIndex > -1) {
-                tasks[taskIndex] = { ...tasks[taskIndex], name, time, priority, chunkMin, chunkMax };
+                flexibleTasks[taskIndex] = { ...flexibleTasks[taskIndex], name, time, priority, chunkMin, chunkMax };
             }
-            exitEditMode();
         } else {
-            // Add new task
             const newTask = { id: Date.now(), name, time, priority, chunkMin, chunkMax };
-            tasks.push(newTask);
+            flexibleTasks.push(newTask);
         }
-        
-        // Clear only the input fields for a new task, not when editing
-        if (currentlyEditingId === null) {
-            taskNameInput.value = '';
-            totalTimeInput.value = '';
-            priorityInput.value = '';
-        }
-
         renderTasks();
-        if (currentlyEditingId !== null) exitEditMode(); // ensure we exit edit mode after render
+        exitTaskEditMode();
     };
     
     const handleRemoveTask = (id) => {
-        if(currentlyEditingId === id){
-            exitEditMode(); // If deleting the task being edited, reset the form
-        }
-        tasks = tasks.filter(t => t.id !== id);
+        if(currentlyEditingTaskId === id) exitTaskEditMode();
+        flexibleTasks = flexibleTasks.filter(t => t.id !== id);
         renderTasks();
     };
 
+    // --- FIXED APPOINTMENT LOGIC ---
+    const formatTime = (time) => {
+        if (!time) return '';
+        let [hours, minutes] = time.split(':');
+        let ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        return `${hours}:${minutes} ${ampm}`;
+    };
+    
+    const enterAppointmentEditMode = (id) => {
+        const appointmentToEdit = fixedAppointments.find(a => a.id === id);
+        if (!appointmentToEdit) return;
+        currentlyEditingAppointmentId = id;
+        appointmentFormTitle.textContent = 'Edit Fixed Appointment';
+        appointmentNameInput.value = appointmentToEdit.name;
+        dayOfWeekInput.value = appointmentToEdit.day;
+        startTimeInput.value = appointmentToEdit.start;
+        endTimeInput.value = appointmentToEdit.end;
+        addAppointmentBtn.textContent = 'Update Appointment';
+        addAppointmentBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        addAppointmentBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+    };
+
+    const exitAppointmentEditMode = () => {
+        currentlyEditingAppointmentId = null;
+        appointmentFormTitle.textContent = 'Add Fixed Appointment';
+        appointmentNameInput.value = '';
+        dayOfWeekInput.value = '';
+        startTimeInput.value = '';
+        endTimeInput.value = '';
+        addAppointmentBtn.textContent = 'Add Appointment';
+        addAppointmentBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+        addAppointmentBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+    };
+
+    const renderAppointments = () => {
+        appointmentListContainer.innerHTML = '';
+        if (fixedAppointments.length === 0) {
+            appointmentListContainer.innerHTML = `<div class="text-center text-gray-500 pt-12"><p>No fixed appointments added yet.</p></div>`;
+            return;
+        }
+        fixedAppointments.forEach(appt => {
+            const apptElement = document.createElement('div');
+            apptElement.className = 'appointment-item bg-gray-700 p-4 rounded-md flex justify-between items-start cursor-pointer transition-colors duration-200';
+            apptElement.addEventListener('click', () => enterAppointmentEditMode(appt.id));
+            const infoContainer = document.createElement('div');
+            infoContainer.innerHTML = `<p class="font-bold text-white">${appt.name}</p><p class="text-sm text-gray-300">${appt.day} | ${formatTime(appt.start)} - ${formatTime(appt.end)}</p>`;
+            const removeButton = document.createElement('button');
+            removeButton.innerHTML = '&times;';
+            removeButton.className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md transition duration-300 flex-shrink-0 ml-4';
+            removeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleRemoveAppointment(appt.id);
+            });
+            apptElement.appendChild(infoContainer);
+            apptElement.appendChild(removeButton);
+            appointmentListContainer.appendChild(apptElement);
+        });
+    };
+
+    const handleAppointmentFormSubmit = () => {
+        const name = appointmentNameInput.value.trim();
+        const day = dayOfWeekInput.value;
+        const start = startTimeInput.value;
+        const end = endTimeInput.value;
+
+        if (!name || !day || !start || !end) {
+            alert('Please fill out all appointment fields.');
+            return;
+        }
+        if (currentlyEditingAppointmentId !== null) {
+            const apptIndex = fixedAppointments.findIndex(a => a.id === currentlyEditingAppointmentId);
+            if (apptIndex > -1) {
+                fixedAppointments[apptIndex] = { ...fixedAppointments[apptIndex], name, day, start, end };
+            }
+        } else {
+            const newAppointment = { id: Date.now(), name, day, start, end };
+            fixedAppointments.push(newAppointment);
+        }
+        fixedAppointments.sort((a, b) => { // Keep the list sorted
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            if (days.indexOf(a.day) !== days.indexOf(b.day)) {
+                return days.indexOf(a.day) - days.indexOf(b.day);
+            }
+            return a.start.localeCompare(b.start);
+        });
+        renderAppointments();
+        exitAppointmentEditMode();
+    };
+    
+    const handleRemoveAppointment = (id) => {
+        if(currentlyEditingAppointmentId === id) exitAppointmentEditMode();
+        fixedAppointments = fixedAppointments.filter(a => a.id !== id);
+        renderAppointments();
+    };
+
     // --- EVENT LISTENERS ---
-    addTaskBtn.addEventListener('click', handleFormSubmit);
-    downloadJsonBtn.addEventListener('click', () => handleDownload(JSON.stringify(tasks, null, 2), 'tasks.json', 'application/json'));
-    downloadSqlBtn.addEventListener('click', () => handleDownload(generateSQL(tasks), 'tasks.sql', 'application/sql'));
+    addTaskBtn.addEventListener('click', handleTaskFormSubmit);
+    downloadJsonBtn.addEventListener('click', () => handleDownload(JSON.stringify(flexibleTasks, null, 2), 'tasks.json', 'application/json'));
+    downloadSqlBtn.addEventListener('click', () => handleDownload(generateSQL(flexibleTasks), 'tasks.sql', 'application/sql'));
+    addAppointmentBtn.addEventListener('click', handleAppointmentFormSubmit);
 
     // --- INITIALIZATION ---
     populateTimeDropdowns();
     renderTasks();
+    renderAppointments();
 });
 

@@ -27,3 +27,22 @@ It will have:
 The difference between the two is, fa's I go to every day are not the same every day. They are appointments that I have made with others before time like class. You have to schedule around those.
 My daily fa's are mandatory events that I have to do on a daily basis.
 
+
+
+Prompt 3
+
+I want the ability to click on a task in the current task list and edit it.
+
+* The information in the task I select from the current task list should populate the "create new task" block with the task name, total time, priority, and chunk size.
+* The "add task" button should be changed to "edit task"
+
+
+
+Prompt 4
+
+I want you to add another block on the page that will allow me to add/remove/edit fixed appointments without having to redownload a new pdf with all of my fixed appointments.
+
+
+
+
+

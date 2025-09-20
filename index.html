@@ -15,39 +15,23 @@
         <div class="max-w-4xl mx-auto">
             <header class="mb-8 text-center">
                 <h1 class="text-4xl font-bold text-white mb-2">AI Secretary: Task Creator</h1>
-                <p class="text-gray-400">Define your flexible tasks for AI-powered scheduling.</p>
+                <p class="text-gray-400">Define your flexible and fixed tasks for AI-powered scheduling.</p>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Flexible Tasks Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                 <!-- Input Form Section -->
                 <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
-                    <h2 id="form-title" class="text-2xl font-semibold mb-4 text-white">Create New Task</h2>
+                    <h2 id="form-title" class="text-2xl font-semibold mb-4 text-white">Create Flexible Task</h2>
                     <div class="space-y-4">
-                        <!-- Task Name -->
-                        <input
-                            id="task-name-input"
-                            type="text"
-                            placeholder="Task Name (e.g., Physics Homework)"
-                            class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <!-- Total Time Allocation -->
-                        <input
-                            id="total-time-input"
-                            type="text"
-                            placeholder="Total Time (e.g., 3 hours)"
-                            class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <!-- Priority -->
-                        <select
-                            id="priority-input"
-                            class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                        >
+                        <input id="task-name-input" type="text" placeholder="Task Name (e.g., Physics Homework)" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <input id="total-time-input" type="text" placeholder="Total Time (e.g., 3 hours)" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <select id="priority-input" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
                             <option value="" disabled selected class="text-gray-500">Select Priority</option>
                             <option value="High">High Priority</option>
                             <option value="Medium">Medium Priority</option>
                             <option value="Low">Low Priority</option>
                         </select>
-                        <!-- Time Chunk Size Range -->
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">Time Chunk Size Range</label>
                             <div class="flex items-center justify-between space-x-2">
@@ -56,45 +40,63 @@
                                 <select id="chunk-max-input" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"></select>
                             </div>
                         </div>
-                        <button
-                            id="add-task-btn"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg"
-                        >
-                            Add Task
-                        </button>
+                        <button id="add-task-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">Add Task</button>
                     </div>
-                     <!-- Download Buttons -->
                     <div class="mt-6 border-t border-gray-700 pt-4">
-                        <h3 class="text-lg font-semibold mb-3 text-center text-white">Export Tasks</h3>
+                        <h3 class="text-lg font-semibold mb-3 text-center text-white">Export Flexible Tasks</h3>
                         <div class="flex space-x-4">
-                            <button
-                                id="download-json-btn"
-                                class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300"
-                            >
-                                Download JSON
-                            </button>
-                            <button
-                                id="download-sql-btn"
-                                class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300"
-                            >
-                                Download SQL
-                            </button>
+                            <button id="download-json-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Download JSON</button>
+                            <button id="download-sql-btn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Download SQL</button>
                         </div>
                     </div>
                 </div>
-
                 <!-- Display Section -->
                 <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
-                    <h2 class="text-2xl font-semibold mb-4 text-white">Current Task List</h2>
-                    <div id="task-list-container" class="task-list space-y-3 h-[465px] overflow-y-auto pr-2">
-                        <!-- Tasks will be dynamically inserted here -->
+                    <h2 class="text-2xl font-semibold mb-4 text-white">Flexible Task List</h2>
+                    <div id="task-list-container" class="task-list space-y-3 h-[465px] overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+            
+            <!-- Fixed Appointments Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Input Form Section -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <h2 id="appointment-form-title" class="text-2xl font-semibold mb-4 text-white">Add Fixed Appointment</h2>
+                    <div class="space-y-4">
+                         <input id="appointment-name-input" type="text" placeholder="Appointment Name (e.g., Physics Class)" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <select id="day-of-week-input" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                            <option value="" disabled selected>Select Day</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
+                        <div class="flex items-center justify-between space-x-2">
+                            <div>
+                                <label for="start-time-input" class="block text-sm font-medium text-gray-300 mb-1">Start Time</label>
+                                <input type="time" id="start-time-input" class="w-full p-2 bg-gray-700 rounded-md border border-gray-600">
+                            </div>
+                            <div>
+                                <label for="end-time-input" class="block text-sm font-medium text-gray-300 mb-1">End Time</label>
+                                <input type="time" id="end-time-input" class="w-full p-2 bg-gray-700 rounded-md border border-gray-600">
+                            </div>
+                        </div>
+                         <button id="add-appointment-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg">Add Appointment</button>
                     </div>
+                </div>
+                <!-- Display Section -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <h2 class="text-2xl font-semibold mb-4 text-white">Fixed Appointment List</h2>
+                    <div id="appointment-list-container" class="task-list space-y-3 h-[300px] overflow-y-auto pr-2"></div>
                 </div>
             </div>
 
-            <!-- Fixed Appointments Section from previous step -->
+            <!-- Legacy Section -->
             <div class="bg-gray-800 p-6 rounded-lg shadow-xl mt-8 md:col-span-2">
-                 <h2 class="text-2xl font-semibold mb-4 text-white">Set Your Fixed Schedule</h2>
+                 <h2 class="text-2xl font-semibold mb-4 text-white">Set Your Fixed Schedule (Legacy)</h2>
                 <div class="space-y-2 mb-6">
                     <label for="daily-appointments" class="block text-sm font-medium text-gray-300">Daily Mandatory Events</label>
                     <textarea id="daily-appointments" rows="3" placeholder="e.g., Lunch from 11:30 to 12:30&#10;Piano + Coding from 14:45 to 15:15" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
@@ -122,4 +124,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
