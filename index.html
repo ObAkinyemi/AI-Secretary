@@ -21,7 +21,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- Input Form Section -->
                 <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
-                    <h2 class="text-2xl font-semibold mb-4 text-white">Create New Task</h2>
+                    <h2 id="form-title" class="text-2xl font-semibold mb-4 text-white">Create New Task</h2>
                     <div class="space-y-4">
                         <!-- Task Name -->
                         <input
@@ -58,7 +58,7 @@
                         </div>
                         <button
                             id="add-task-btn"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-lg"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-lg"
                         >
                             Add Task
                         </button>
@@ -106,13 +106,13 @@
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-300">Schedule Flexible Tasks On:</label>
                     <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4 pt-2">
-                        <div class="flex items-center"><input type="checkbox" id="day-mon" class="h-4 w-4 rounded"><label for="day-mon" class="ml-2">Monday</label></div>
-                        <div class="flex items-center"><input type="checkbox" id="day-tue" class="h-4 w-4 rounded"><label for="day-tue" class="ml-2">Tuesday</label></div>
-                        <div class="flex items-center"><input type="checkbox" id="day-wed" class="h-4 w-4 rounded"><label for="day-wed" class="ml-2">Wednesday</label></div>
-                        <div class="flex items-center"><input type="checkbox" id="day-thu" class="h-4 w-4 rounded"><label for="day-thu" class="ml-2">Thursday</label></div>
-                        <div class="flex items-center"><input type="checkbox" id="day-fri" class="h-4 w-4 rounded"><label for="day-fri" class="ml-2">Friday</label></div>
-                        <div class="flex items-center"><input type="checkbox" id="day-sat" class="h-4 w-4 rounded"><label for="day-sat" class="ml-2">Saturday</label></div>
-                        <div class="flex items-center"><input type="checkbox" id="day-sun" class="h-4 w-4 rounded"><label for="day-sun" class="ml-2">Sunday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-mon" name="schedule-day" value="Monday" class="h-4 w-4 rounded"><label for="day-mon" class="ml-2">Monday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-tue" name="schedule-day" value="Tuesday" class="h-4 w-4 rounded"><label for="day-tue" class="ml-2">Tuesday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-wed" name="schedule-day" value="Wednesday" class="h-4 w-4 rounded"><label for="day-wed" class="ml-2">Wednesday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-thu" name="schedule-day" value="Thursday" class="h-4 w-4 rounded"><label for="day-thu" class="ml-2">Thursday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-fri" name="schedule-day" value="Friday" class="h-4 w-4 rounded"><label for="day-fri" class="ml-2">Friday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-sat" name="schedule-day" value="Saturday" class="h-4 w-4 rounded"><label for="day-sat" class="ml-2">Saturday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-sun" name="schedule-day" value="Sunday" class="h-4 w-4 rounded"><label for="day-sun" class="ml-2">Sunday</label></div>
                     </div>
                 </div>
             </div>

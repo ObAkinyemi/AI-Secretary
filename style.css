@@ -29,3 +29,9 @@ input[type="checkbox"] {
 input[type="checkbox"]:focus {
     --tw-ring-color: #3b82f6; /* blue-500 */
 }
+
+/* Add a hover effect for editable tasks */
+.task-item:hover {
+    background-color: #4a5568; /* gray-600 */
+}
+
