@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Secretary: Task Creator</title>
+    <!-- Link to Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Link to your custom stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <main class="min-h-screen p-4 sm:p-8">
+        <div class="max-w-4xl mx-auto">
+            <header class="mb-8 text-center">
+                <h1 class="text-4xl font-bold text-white mb-2">AI Secretary: Task Creator</h1>
+                <p class="text-gray-400">Define your flexible tasks for AI-powered scheduling.</p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Input Form Section -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <h2 class="text-2xl font-semibold mb-4 text-white">Create New Task</h2>
+                    <div class="space-y-4">
+                        <!-- Task Name -->
+                        <input
+                            id="task-name-input"
+                            type="text"
+                            placeholder="Task Name (e.g., Physics Homework)"
+                            class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <!-- Total Time Allocation -->
+                        <input
+                            id="total-time-input"
+                            type="text"
+                            placeholder="Total Time (e.g., 3 hours)"
+                            class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <!-- Priority -->
+                        <select
+                            id="priority-input"
+                            class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                        >
+                            <option value="" disabled selected class="text-gray-500">Select Priority</option>
+                            <option value="High">High Priority</option>
+                            <option value="Medium">Medium Priority</option>
+                            <option value="Low">Low Priority</option>
+                        </select>
+                        <!-- Time Chunk Size Range -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Time Chunk Size Range</label>
+                            <div class="flex items-center justify-between space-x-2">
+                                <select id="chunk-min-input" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"></select>
+                                <span class="text-gray-400">to</span>
+                                <select id="chunk-max-input" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"></select>
+                            </div>
+                        </div>
+                        <button
+                            id="add-task-btn"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 shadow-lg"
+                        >
+                            Add Task
+                        </button>
+                    </div>
+                     <!-- Download Buttons -->
+                    <div class="mt-6 border-t border-gray-700 pt-4">
+                        <h3 class="text-lg font-semibold mb-3 text-center text-white">Export Tasks</h3>
+                        <div class="flex space-x-4">
+                            <button
+                                id="download-json-btn"
+                                class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300"
+                            >
+                                Download JSON
+                            </button>
+                            <button
+                                id="download-sql-btn"
+                                class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300"
+                            >
+                                Download SQL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Section -->
+                <div class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <h2 class="text-2xl font-semibold mb-4 text-white">Current Task List</h2>
+                    <div id="task-list-container" class="task-list space-y-3 h-[465px] overflow-y-auto pr-2">
+                        <!-- Tasks will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Appointments Section from previous step -->
+            <div class="bg-gray-800 p-6 rounded-lg shadow-xl mt-8 md:col-span-2">
+                 <h2 class="text-2xl font-semibold mb-4 text-white">Set Your Fixed Schedule</h2>
+                <div class="space-y-2 mb-6">
+                    <label for="daily-appointments" class="block text-sm font-medium text-gray-300">Daily Mandatory Events</label>
+                    <textarea id="daily-appointments" rows="3" placeholder="e.g., Lunch from 11:30 to 12:30&#10;Piano + Coding from 14:45 to 15:15" class="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="space-y-2 mb-6">
+                    <label for="pdf-upload" class="block text-sm font-medium text-gray-300">Fixed Appointment Schedule (PDF)</label>
+                    <input id="pdf-upload" type="file" accept=".pdf" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"/>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-300">Schedule Flexible Tasks On:</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4 pt-2">
+                        <div class="flex items-center"><input type="checkbox" id="day-mon" class="h-4 w-4 rounded"><label for="day-mon" class="ml-2">Monday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-tue" class="h-4 w-4 rounded"><label for="day-tue" class="ml-2">Tuesday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-wed" class="h-4 w-4 rounded"><label for="day-wed" class="ml-2">Wednesday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-thu" class="h-4 w-4 rounded"><label for="day-thu" class="ml-2">Thursday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-fri" class="h-4 w-4 rounded"><label for="day-fri" class="ml-2">Friday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-sat" class="h-4 w-4 rounded"><label for="day-sat" class="ml-2">Saturday</label></div>
+                        <div class="flex items-center"><input type="checkbox" id="day-sun" class="h-4 w-4 rounded"><label for="day-sun" class="ml-2">Sunday</label></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>
+
