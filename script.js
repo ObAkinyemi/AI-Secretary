@@ -1,4 +1,7 @@
 // Wait for the DOM to be fully loaded before running the script
+const dotenv = require('dotenv');
+dotenv.config;
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- STATE MANAGEMENT ---
