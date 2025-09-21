@@ -1,6 +1,7 @@
 .pdf
 .env
 .env
+.env.local
 /package.json
 /package-lock.json
 /tasks.json
