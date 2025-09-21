@@ -4,6 +4,7 @@
 import { useState, useRef } from 'react';
 // Correctly import the pdfjs-dist library
 import * as pdfjsLib from 'pdfjs-dist';
+import SignInButton from '@/components/SignInButton';
 
 // Set up the worker for pdf.js. This is a required step.
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -160,7 +161,12 @@ export default function HomePage() {
     return (
         <main className="bg-gray-900 text-white min-h-screen p-4 sm:p-8 font-sans">
             <div className="max-w-7xl mx-auto space-y-12">
-                <header className="text-center">
+                <header className="text-center mb-10">
+                    {/* Add this div to position the button in the top right */}
+                    <div className="flex justify-end p-4">
+                        <SignInButton />
+                    </div>
+
                     <h1 className="text-4xl sm:text-5xl font-bold text-blue-400">AI Secretary</h1>
                     <p className="text-lg text-gray-400 mt-2">Your intelligent scheduling assistant</p>
                 </header>
