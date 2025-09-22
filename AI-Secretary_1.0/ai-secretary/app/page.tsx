@@ -2,6 +2,7 @@
 
 import { useState, ChangeEvent, FormEvent, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+import { useSession } from "next-auth/react"; // Import useSession to check login status
 import SignInButton from '@/components/SignInButton';
 
 // --- INTERFACES: Defining the shape of our data ---
@@ -38,12 +39,9 @@ const generateTimeOptions = (limitInMinutes: number) => {
     return options;
 };
 
+
 export default function HomePage() {
-    // --- FIX: Move pdf.js setup into a useEffect hook ---
-    useEffect(() => {
-        // This code now runs only on the client, after the component has mounted
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-    }, []); // The empty array ensures this runs only once.
+    const { data: session } = useSession(); // Get session status to enable/disable the button
 
     // --- STATE MANAGEMENT ---
     const [flexibleTasks, setFlexibleTasks] = useState<FlexibleTask[]>([]);
@@ -67,6 +65,13 @@ export default function HomePage() {
     const [generatedSchedule, setGeneratedSchedule] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const [isPushing, setIsPushing] = useState(false);
+    const [pushMessage, setPushMessage] = useState('');
+
+    useEffect(() => {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+    }, []);
 
     const timeOptions = generateTimeOptions(240);
 
@@ -176,14 +181,14 @@ export default function HomePage() {
         if (id === editingApptId) resetAppointmentForm();
     };
 
-
     const handleGenerateSchedule = async () => {
+        setPushMessage(''); 
         setIsLoading(true);
         setError('');
         setGeneratedSchedule('');
 
         const fixedAppointmentsText = `
-            Daily Mandatory Events:
+            Daily Mandatory Events from PDF:
             ${dailyEvents}
             ---
             Manually Added Fixed Appointments:
@@ -206,7 +211,7 @@ export default function HomePage() {
             }
             const data = await response.json();
             setGeneratedSchedule(data.schedule);
-        } catch (err) { 
+        } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
             } else {
@@ -214,6 +219,31 @@ export default function HomePage() {
             }
         } finally {
             setIsLoading(false);
+        }
+    };
+    
+    const handlePushToCalendar = async () => {
+        if (!generatedSchedule) {
+            alert("Please generate a schedule first.");
+            return;
+        }
+        setIsPushing(true);
+        setPushMessage('');
+        try {
+            const response = await fetch('/api/calendar/push', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scheduleText: generatedSchedule }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.details || data.error || "Failed to push to calendar.");
+            }
+            setPushMessage(data.message);
+        } catch (err: any) {
+            setPushMessage(`Error: ${err.message}`);
+        } finally {
+            setIsPushing(false);
         }
     };
   
@@ -262,8 +292,6 @@ export default function HomePage() {
                                 {editingTaskId && <button type="button" onClick={resetTaskForm} className="w-full mt-2 p-2 bg-gray-600 hover:bg-gray-500 font-bold rounded-md">Cancel Edit</button>}
                             </form>
                         </section>
-
-                        {/* Fixed Appointment Manager UI */}
                          <section className="bg-gray-800 p-6 rounded-lg shadow-xl">
                             <h2 className="text-2xl font-semibold mb-4">{editingApptId ? 'Edit Appointment' : 'Add Fixed Appointment'}</h2>
                             <form onSubmit={handleAppointmentSubmit} className="space-y-4">
@@ -281,9 +309,6 @@ export default function HomePage() {
                                 {editingApptId && <button type="button" onClick={resetAppointmentForm} className="w-full mt-2 p-2 bg-gray-600 hover:bg-gray-500 font-bold rounded-md">Cancel Edit</button>}
                             </form>
                         </section>
-
-
-                        {/* Schedule Settings */}
                         <section className="bg-gray-800 p-6 rounded-lg shadow-xl">
                             <h2 className="text-2xl font-semibold mb-4">Scheduling Rules & PDF Upload</h2>
                              <textarea rows={4} placeholder="Enter your scheduling rules..." className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 mb-4" value={schedulingRules} onChange={(e) => setSchedulingRules(e.target.value)} />
@@ -310,7 +335,6 @@ export default function HomePage() {
                                 )) : <p className="text-gray-500">No flexible tasks added yet.</p>}
                             </div>
                         </section>
-                        {/* Fixed Appointment Display */}
                          <section className="bg-gray-800 p-6 rounded-lg shadow-xl">
                             <h2 className="text-2xl font-semibold mb-4">Fixed Appointment List</h2>
                             <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
@@ -340,6 +364,18 @@ export default function HomePage() {
                     <section className="mt-8 bg-gray-800 p-6 rounded-lg shadow-xl">
                         <h2 className="text-2xl font-semibold mb-4">Your Optimized Schedule</h2>
                         <div className="bg-gray-900 p-4 rounded-md whitespace-pre-wrap text-left font-mono">{generatedSchedule}</div>
+                        
+                        <div className="mt-6 text-center">
+                            <button 
+                                onClick={handlePushToCalendar} 
+                                disabled={!session || isPushing}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
+                            >
+                                {isPushing ? 'Pushing to Calendar...' : 'Push to Google Calendar'}
+                            </button>
+                            {!session && <p className="text-sm text-gray-400 mt-2">You must be signed in to push your schedule.</p>}
+                            {pushMessage && <p className={`mt-4 ${pushMessage.startsWith('Error:') ? 'text-red-400' : 'text-green-400'}`}>{pushMessage}</p>}
+                        </div>
                     </section>
                 )}
             </div>
