@@ -55,3 +55,11 @@ I want to be able to see my fixed appointments in the "daily mandatory events" b
 
 * Fill out the daily mandatory events text block with the days, events, and times from the pdf.
 * Fill the check boxes of the days included in the pdf.
+
+
+Prompt 6
+I am going to use co-pilot to create a python script that should export one weeks worth of outlook data into an ics file.
+It will be in a separate github repository from the AI secretary.
+Once this happens, pdfjs will no longer be needed, and instead, I'll need AI-secretary (the nextjs version) to read ics files and print them out in a more user-friendly format.
+For right now, I will get the python script to work. However, I want to give you an ics so that you can give me an example of what user-friendly would look like.
+In the very near future, I want to implement this python script into AI secretary as a button that will allow me to export 1 weeks worth of every event in my outlook calendar. In this context, my outlook calendar does not mean one editable outlook calendar. One calendar is the entire outlook of all of my events in the outlook app, or in the future, google calendar, and apple calendar.
