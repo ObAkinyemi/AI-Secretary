@@ -136,7 +136,7 @@
                                     <input type="time" id="end-time" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                             </div>
-                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">Add Appointment</button>
+                            <button type="submit" id="appointment-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">Add Appointment</button>
                         </form>
                     </div>
 
@@ -155,8 +155,9 @@
         </main>
     </div>
 
-    <!-- Modals (shared between tabs) -->
-    <div id="action-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+    <!-- Modals -->
+    <!-- Task Action Modal -->
+    <div id="task-action-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
             <h3 class="text-xl font-semibold mb-2 text-white truncate" id="modal-task-name"></h3>
             <p class="text-gray-400 mb-6">What would you like to do?</p>
@@ -164,9 +165,24 @@
                 <button id="edit-task-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Edit Task</button>
                 <button id="template-task-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg">Use as Template</button>
             </div>
-            <button id="close-modal-btn" class="mt-6 text-gray-500 hover:text-white text-sm">Cancel</button>
+            <button id="close-task-modal-btn" class="mt-6 text-gray-500 hover:text-white text-sm">Cancel</button>
         </div>
     </div>
+    
+    <!-- Appointment Action Modal -->
+    <div id="appointment-action-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-xl font-semibold mb-2 text-white truncate" id="modal-appointment-name"></h3>
+            <p class="text-gray-400 mb-6">What would you like to do?</p>
+            <div class="space-y-3">
+                <button id="edit-appointment-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Edit Appointment</button>
+                <button id="template-appointment-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg">Use as Template</button>
+            </div>
+            <button id="close-appointment-modal-btn" class="mt-6 text-gray-500 hover:text-white text-sm">Cancel</button>
+        </div>
+    </div>
+
+    <!-- JSON Import Instructions Modal -->
     <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-2xl text-left">
             <div class="flex justify-between items-center mb-4">
@@ -186,8 +202,10 @@
             // --- STATE ---
             let tasks = [];
             let appointments = [];
-            let editIndex = null;
+            let editTaskIndex = null;
             let selectedTaskIndex = null;
+            let editAppointmentIndex = null;
+            let selectedAppointmentIndex = null;
 
             // --- DOM ELEMENTS ---
             // Tabs
@@ -220,13 +238,21 @@
             const endTimeInput = document.getElementById('end-time');
             const appointmentListContainer = document.getElementById('appointment-list');
             const downloadIcsBtn = document.getElementById('download-ics');
+            const appointmentSubmitBtn = document.getElementById('appointment-submit-btn');
 
             // Modals
-            const actionModal = document.getElementById('action-modal');
+            const taskActionModal = document.getElementById('task-action-modal');
             const modalTaskName = document.getElementById('modal-task-name');
             const editTaskBtn = document.getElementById('edit-task-btn');
             const templateTaskBtn = document.getElementById('template-task-btn');
-            const closeModalBtn = document.getElementById('close-modal-btn');
+            const closeTaskModalBtn = document.getElementById('close-task-modal-btn');
+            
+            const appointmentActionModal = document.getElementById('appointment-action-modal');
+            const modalAppointmentName = document.getElementById('modal-appointment-name');
+            const editAppointmentBtn = document.getElementById('edit-appointment-btn');
+            const templateAppointmentBtn = document.getElementById('template-appointment-btn');
+            const closeAppointmentModalBtn = document.getElementById('close-appointment-modal-btn');
+
             const importModal = document.getElementById('import-modal');
             const closeImportModalBtn = document.getElementById('close-import-modal-btn');
 
@@ -288,7 +314,7 @@
             const resetTaskForm = () => {
                 taskForm.reset();
                 durationSelect.value = "60";
-                editIndex = null;
+                editTaskIndex = null;
                 submitBtn.textContent = 'Add Task';
                 submitBtn.classList.replace('bg-yellow-600', 'bg-blue-600');
                 taskNameInput.focus();
@@ -305,13 +331,12 @@
                     min_chunk_minutes: minChunkSelect.value ? parseInt(minChunkSelect.value, 10) : null,
                     max_chunk_minutes: maxChunkSelect.value ? parseInt(maxChunkSelect.value, 10) : null
                 };
-                if (editIndex !== null) tasks[editIndex] = taskData;
+                if (editTaskIndex !== null) tasks[editTaskIndex] = taskData;
                 else tasks.push(taskData);
                 updateTaskUI();
                 resetTaskForm();
             };
             
-            // ... (rest of task functions: remove, populate, modals, import)
             const removeTask = (index) => {
                 tasks.splice(index, 1);
                 updateTaskUI();
@@ -328,7 +353,7 @@
                 priorityInput.value = task.priority;
                 projectInput.value = task.project || '';
                 if (!asTemplate) {
-                    editIndex = index;
+                    editTaskIndex = index;
                     submitBtn.textContent = 'Update Task';
                     submitBtn.classList.replace('bg-blue-600', 'bg-yellow-600');
                 } else {
@@ -338,13 +363,15 @@
                 taskNameInput.focus();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
-             const openActionModal = (index) => {
+            
+            const openTaskActionModal = (index) => {
                 selectedTaskIndex = index;
                 modalTaskName.textContent = tasks[index].task_name;
-                actionModal.classList.remove('hidden');
+                taskActionModal.classList.remove('hidden');
             };
-            const closeActionModal = () => {
-                actionModal.classList.add('hidden');
+
+            const closeTaskActionModal = () => {
+                taskActionModal.classList.add('hidden');
                 selectedTaskIndex = null;
             };
 
@@ -371,19 +398,26 @@
                 e.target.value = '';
             };
 
-
             // --- APPOINTMENT MANAGER FUNCTIONS ---
             const renderAppointments = () => {
                 appointmentListContainer.innerHTML = appointments.length === 0
                     ? '<p class="text-gray-500 text-center py-4">Your appointments will appear here...</p>'
                     : appointments.map((appt, index) => `
-                        <div class="appointment-item bg-gray-700 p-4 rounded-lg flex justify-between items-center gap-4">
+                        <div class="appointment-item bg-gray-700 p-4 rounded-lg flex justify-between items-center gap-4 cursor-pointer hover:bg-gray-600" data-index="${index}">
                             <div>
                                 <p class="font-bold text-white">${appt.name}</p>
                                 <p class="text-sm text-gray-400">${appt.date} from ${appt.start} to ${appt.end}</p>
                             </div>
                             <button data-index="${index}" class="remove-appointment-btn text-gray-500 hover:text-red-500 font-bold text-xl">&times;</button>
                         </div>`).join('');
+            };
+            
+            const resetAppointmentForm = () => {
+                appointmentForm.reset();
+                editAppointmentIndex = null;
+                appointmentSubmitBtn.textContent = 'Add Appointment';
+                appointmentSubmitBtn.classList.replace('bg-yellow-600', 'bg-blue-600');
+                appointmentNameInput.focus();
             };
 
             const handleAppointmentFormSubmit = (e) => {
@@ -394,15 +428,18 @@
                     start: startTimeInput.value,
                     end: endTimeInput.value
                 };
-                // Basic validation
                 if (!newAppointment.name || !newAppointment.date || !newAppointment.start || !newAppointment.end) {
                     alert('Please fill out all appointment fields.');
                     return;
                 }
-                appointments.push(newAppointment);
+                if (editAppointmentIndex !== null) {
+                    appointments[editAppointmentIndex] = newAppointment;
+                } else {
+                    appointments.push(newAppointment);
+                }
                 appointments.sort((a,b) => new Date(`${a.date}T${a.start}`) - new Date(`${b.date}T${b.start}`));
                 renderAppointments();
-                appointmentForm.reset();
+                resetAppointmentForm();
             };
             
             const removeAppointment = (index) => {
@@ -410,37 +447,49 @@
                 renderAppointments();
             };
 
+             const populateAppointmentForm = (index, asTemplate = false) => {
+                const appt = appointments[index];
+                if (!appt) return;
+
+                appointmentNameInput.value = asTemplate ? '' : appt.name;
+                appointmentDateInput.value = appt.date;
+                startTimeInput.value = appt.start;
+                endTimeInput.value = appt.end;
+
+                if (!asTemplate) {
+                    editAppointmentIndex = index;
+                    appointmentSubmitBtn.textContent = 'Update Appointment';
+                    appointmentSubmitBtn.classList.replace('bg-blue-600', 'bg-yellow-600');
+                } else {
+                    resetAppointmentForm();
+                    appointmentNameInput.value = '';
+                }
+                appointmentNameInput.focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+            
+            const openAppointmentActionModal = (index) => {
+                selectedAppointmentIndex = index;
+                modalAppointmentName.textContent = appointments[index].name;
+                appointmentActionModal.classList.remove('hidden');
+            };
+
+            const closeAppointmentActionModal = () => {
+                appointmentActionModal.classList.add('hidden');
+                selectedAppointmentIndex = null;
+            };
+
             const handleDownloadICS = () => {
                 if (appointments.length === 0) {
                     alert('No appointments to download.');
                     return;
                 }
-                
-                const toICSDate = (dateStr, timeStr) => {
-                    const d = new Date(`${dateStr}T${timeStr}`);
-                    return d.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
-                };
-                
-                let icsContent = [
-                    'BEGIN:VCALENDAR',
-                    'VERSION:2.0',
-                    'PRODID:-//AI-Secretary//Appointment Generator//EN'
-                ];
-
+                const toICSDate = (dateStr, timeStr) => new Date(`${dateStr}T${timeStr}`).toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+                let icsContent = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AI-Secretary//Appointment Generator//EN'];
                 appointments.forEach(appt => {
-                    icsContent.push(
-                        'BEGIN:VEVENT',
-                        `UID:${new Date().getTime()}${Math.random()}@aisecretary.com`,
-                        `DTSTAMP:${toICSDate(new Date().toISOString().slice(0,10), new Date().toTimeString().slice(0,5))}`,
-                        `DTSTART:${toICSDate(appt.date, appt.start)}`,
-                        `DTEND:${toICSDate(appt.date, appt.end)}`,
-                        `SUMMARY:${appt.name}`,
-                        'END:VEVENT'
-                    );
+                    icsContent.push('BEGIN:VEVENT', `UID:${new Date().getTime()}${Math.random()}@aisecretary.com`, `DTSTAMP:${toICSDate(new Date().toISOString().slice(0,10), new Date().toTimeString().slice(0,5))}`, `DTSTART:${toICSDate(appt.date, appt.start)}`, `DTEND:${toICSDate(appt.date, appt.end)}`, `SUMMARY:${appt.name}`, 'END:VEVENT');
                 });
-
                 icsContent.push('END:VCALENDAR');
-
                 const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -456,7 +505,7 @@
             taskForm.addEventListener('submit', handleTaskFormSubmit);
             taskListContainer.addEventListener('click', (e) => {
                 if (e.target.matches('.remove-btn')) removeTask(e.target.dataset.index);
-                else if (e.target.closest('.task-item')) openActionModal(e.target.closest('.task-item').dataset.index);
+                else if (e.target.closest('.task-item')) openTaskActionModal(e.target.closest('.task-item').dataset.index);
             });
             copyJsonBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(jsonOutput.value);
@@ -466,15 +515,25 @@
 
             appointmentForm.addEventListener('submit', handleAppointmentFormSubmit);
             appointmentListContainer.addEventListener('click', (e) => {
-                 if (e.target.matches('.remove-appointment-btn')) removeAppointment(e.target.dataset.index);
+                 if (e.target.matches('.remove-appointment-btn')) {
+                     removeAppointment(e.target.dataset.index);
+                 } else if (e.target.closest('.appointment-item')) {
+                     openAppointmentActionModal(e.target.closest('.appointment-item').dataset.index);
+                 }
             });
             downloadIcsBtn.addEventListener('click', handleDownloadICS);
 
             // Modal & Import Listeners
-            editTaskBtn.addEventListener('click', () => { populateTaskForm(selectedTaskIndex, false); closeActionModal(); });
-            templateTaskBtn.addEventListener('click', () => { populateTaskForm(selectedTaskIndex, true); closeActionModal(); });
-            closeModalBtn.addEventListener('click', closeActionModal);
-            actionModal.addEventListener('click', (e) => { if (e.target === actionModal) closeActionModal(); });
+            editTaskBtn.addEventListener('click', () => { populateTaskForm(selectedTaskIndex, false); closeTaskActionModal(); });
+            templateTaskBtn.addEventListener('click', () => { populateTaskForm(selectedTaskIndex, true); closeTaskActionModal(); });
+            closeTaskModalBtn.addEventListener('click', closeTaskActionModal);
+            taskActionModal.addEventListener('click', (e) => { if (e.target === taskActionModal) closeTaskActionModal(); });
+            
+            editAppointmentBtn.addEventListener('click', () => { populateAppointmentForm(selectedAppointmentIndex, false); closeAppointmentActionModal(); });
+            templateAppointmentBtn.addEventListener('click', () => { populateAppointmentForm(selectedAppointmentIndex, true); closeAppointmentActionModal(); });
+            closeAppointmentModalBtn.addEventListener('click', closeAppointmentActionModal);
+            appointmentActionModal.addEventListener('click', (e) => { if (e.target === appointmentActionModal) closeAppointmentActionModal(); });
+
             importTasksBtn.addEventListener('click', () => jsonFileInput.click());
             jsonFileInput.addEventListener('change', handleFileImport);
             importInstructionsBtn.addEventListener('click', () => importModal.classList.remove('hidden'));
@@ -484,7 +543,8 @@
             // Global keydown listener for modals
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
-                    if (!actionModal.classList.contains('hidden')) closeActionModal();
+                    if (!taskActionModal.classList.contains('hidden')) closeTaskActionModal();
+                    if (!appointmentActionModal.classList.contains('hidden')) closeAppointmentActionModal();
                     if (!importModal.classList.contains('hidden')) importModal.classList.add('hidden');
                 }
             });
