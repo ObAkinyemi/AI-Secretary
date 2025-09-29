@@ -451,19 +451,26 @@
                 const appt = appointments[index];
                 if (!appt) return;
 
+                // Populate the form with the selected appointment's data
                 appointmentNameInput.value = asTemplate ? '' : appt.name;
                 appointmentDateInput.value = appt.date;
                 startTimeInput.value = appt.start;
                 endTimeInput.value = appt.end;
 
-                if (!asTemplate) {
+                if (asTemplate) {
+                    // For a template, ensure we are in "Add" mode
+                    editAppointmentIndex = null;
+                    appointmentSubmitBtn.textContent = 'Add Appointment';
+                    appointmentSubmitBtn.classList.remove('bg-yellow-600');
+                    appointmentSubmitBtn.classList.add('bg-blue-600');
+                } else {
+                    // For an edit, switch to "Update" mode
                     editAppointmentIndex = index;
                     appointmentSubmitBtn.textContent = 'Update Appointment';
-                    appointmentSubmitBtn.classList.replace('bg-blue-600', 'bg-yellow-600');
-                } else {
-                    resetAppointmentForm();
-                    appointmentNameInput.value = '';
+                    appointmentSubmitBtn.classList.remove('bg-blue-600');
+                    appointmentSubmitBtn.classList.add('bg-yellow-600');
                 }
+                
                 appointmentNameInput.focus();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
@@ -560,4 +567,5 @@
     </script>
 </body>
 </html>
+
 
