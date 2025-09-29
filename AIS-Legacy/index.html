@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Secretary - Task & Appointment Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        .task-item, .appointment-item { transition: background-color 0.2s ease-in-out; }
+        .tab-btn {
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tab-btn.active {
+            color: #4ade80; /* A vibrant green for the active tab */
+            border-color: #4ade80;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex flex-col items-center min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <div class="w-full max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white">AI Secretary</h1>
+            <p class="text-lg text-gray-400 mt-2">Task & Appointment Assistant</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div id="tabs" class="mb-8 flex justify-center border-b border-gray-700">
+            <button data-tab="tasks" class="tab-btn active text-lg font-semibold py-3 px-6 border-b-2 border-transparent hover:text-green-400">Task Manager</button>
+            <button data-tab="appointments" class="tab-btn text-lg font-semibold py-3 px-6 border-b-2 border-transparent hover:text-green-400">Appointment Manager</button>
+        </div>
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- Task Manager Content -->
+            <div id="tasks-content" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column: Task Input Form -->
+                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 border-b border-gray-700 pb-4">Add New Task</h2>
+                        <form id="task-form" class="space-y-4">
+                            <div>
+                                <label for="task-name" class="block text-sm font-medium text-gray-300">Task Name</label>
+                                <input type="text" id="task-name" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Study for Physics Quiz">
+                            </div>
+                            <div>
+                                <label for="duration" class="block text-sm font-medium text-gray-300">Total Duration</label>
+                                <select id="duration" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="min-chunk-size" class="block text-sm font-medium text-gray-300">Min Chunk Size</label>
+                                    <select id="min-chunk-size" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                                </div>
+                                <div>
+                                    <label for="max-chunk-size" class="block text-sm font-medium text-gray-300">Max Chunk Size</label>
+                                    <select id="max-chunk-size" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                                </div>
+                            </div>
+                             <div>
+                                <label for="due-date" class="block text-sm font-medium text-gray-300">Due Date</label>
+                                <input type="date" id="due-date" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="priority" class="block text-sm font-medium text-gray-300">Priority</label>
+                                <select id="priority" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option>High</option>
+                                    <option selected>Medium</option>
+                                    <option>Low</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label for="project" class="block text-sm font-medium text-gray-300">Project / Category (Optional)</label>
+                                <input type="text" id="project" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Academics">
+                            </div>
+                            <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">Add Task</button>
+                        </form>
+                    </div>
+                    <div class="flex flex-col gap-8">
+                        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg flex-1 flex flex-col">
+                            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-4">
+                                <h2 class="text-2xl font-semibold">Task Queue</h2>
+                                <div class="flex items-center gap-2">
+                                    <button id="import-instructions-btn" class="text-gray-400 hover:text-white text-sm underline-offset-2 hover:underline">JSON Format Guide</button>
+                                    <button id="import-tasks-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md text-sm transition-colors">Import Tasks</button>
+                                </div>
+                            </div>
+                            <input type="file" id="json-file-input" class="hidden" accept=".json">
+                            <div id="task-list" class="flex-grow overflow-y-auto pr-2 space-y-3">
+                                <p class="text-gray-500 text-center py-4">Your tasks will appear here...</p>
+                            </div>
+                        </div>
+                        <div class="bg-gray-800 p-6 rounded-2xl shadow-lg flex-1 flex flex-col">
+                            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-4">
+                                <h2 class="text-2xl font-semibold">Generated JSON</h2>
+                                <button id="copy-json" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Copy</button>
+                            </div>
+                            <textarea id="json-output" readonly class="w-full flex-grow bg-gray-900 text-green-300 font-mono text-sm p-4 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointment Manager Content -->
+            <div id="appointments-content" class="tab-content hidden">
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Column: Appointment Input Form -->
+                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-6 border-b border-gray-700 pb-4">Add New Appointment</h2>
+                        <form id="appointment-form" class="space-y-4">
+                            <div>
+                                <label for="appointment-name" class="block text-sm font-medium text-gray-300">Appointment Name</label>
+                                <input type="text" id="appointment-name" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Dentist Checkup">
+                            </div>
+                            <div>
+                                <label for="appointment-date" class="block text-sm font-medium text-gray-300">Date</label>
+                                <input type="date" id="appointment-date" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="start-time" class="block text-sm font-medium text-gray-300">Start Time</label>
+                                    <input type="time" id="start-time" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="end-time" class="block text-sm font-medium text-gray-300">End Time</label>
+                                    <input type="time" id="end-time" required class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500">Add Appointment</button>
+                        </form>
+                    </div>
+
+                    <!-- Right Column: Appointment List & Download -->
+                    <div class="bg-gray-800 p-6 rounded-2xl shadow-lg flex-1 flex flex-col">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-4">
+                            <h2 class="text-2xl font-semibold">Appointment List</h2>
+                            <button id="download-ics" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Download .ics File</button>
+                        </div>
+                        <div id="appointment-list" class="flex-grow overflow-y-auto pr-2 space-y-3">
+                            <p class="text-gray-500 text-center py-4">Your appointments will appear here...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals (shared between tabs) -->
+    <div id="action-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+            <h3 class="text-xl font-semibold mb-2 text-white truncate" id="modal-task-name"></h3>
+            <p class="text-gray-400 mb-6">What would you like to do?</p>
+            <div class="space-y-3">
+                <button id="edit-task-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Edit Task</button>
+                <button id="template-task-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg">Use as Template</button>
+            </div>
+            <button id="close-modal-btn" class="mt-6 text-gray-500 hover:text-white text-sm">Cancel</button>
+        </div>
+    </div>
+    <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-2xl text-left">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-white">JSON Import Instructions</h3>
+                <button id="close-import-modal-btn" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="text-gray-300 space-y-4">
+                <p>To import tasks, upload a JSON file containing an array of task objects. Each object must have a <code class="bg-gray-900 px-1 rounded text-green-300">task_name</code> and a <code class="bg-gray-900 px-1 rounded text-green-300">duration_minutes</code>.</p>
+                <p>All other fields are optional. The structure should look like this:</p>
+                <pre class="bg-gray-900 text-green-300 font-mono text-sm p-4 rounded-lg border border-gray-700 overflow-x-auto"><code>[ ... ]</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE ---
+            let tasks = [];
+            let appointments = [];
+            let editIndex = null;
+            let selectedTaskIndex = null;
+
+            // --- DOM ELEMENTS ---
+            // Tabs
+            const tabs = document.getElementById('tabs');
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Task Manager
+            const taskForm = document.getElementById('task-form');
+            const taskNameInput = document.getElementById('task-name');
+            const durationSelect = document.getElementById('duration');
+            const minChunkSelect = document.getElementById('min-chunk-size');
+            const maxChunkSelect = document.getElementById('max-chunk-size');
+            const dueDateInput = document.getElementById('due-date');
+            const priorityInput = document.getElementById('priority');
+            const projectInput = document.getElementById('project');
+            const taskListContainer = document.getElementById('task-list');
+            const jsonOutput = document.getElementById('json-output');
+            const copyJsonBtn = document.getElementById('copy-json');
+            const submitBtn = document.getElementById('submit-btn');
+            const importTasksBtn = document.getElementById('import-tasks-btn');
+            const jsonFileInput = document.getElementById('json-file-input');
+            const importInstructionsBtn = document.getElementById('import-instructions-btn');
+
+            // Appointment Manager
+            const appointmentForm = document.getElementById('appointment-form');
+            const appointmentNameInput = document.getElementById('appointment-name');
+            const appointmentDateInput = document.getElementById('appointment-date');
+            const startTimeInput = document.getElementById('start-time');
+            const endTimeInput = document.getElementById('end-time');
+            const appointmentListContainer = document.getElementById('appointment-list');
+            const downloadIcsBtn = document.getElementById('download-ics');
+
+            // Modals
+            const actionModal = document.getElementById('action-modal');
+            const modalTaskName = document.getElementById('modal-task-name');
+            const editTaskBtn = document.getElementById('edit-task-btn');
+            const templateTaskBtn = document.getElementById('template-task-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const importModal = document.getElementById('import-modal');
+            const closeImportModalBtn = document.getElementById('close-import-modal-btn');
+
+            // --- TAB HANDLING ---
+            tabs.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
+                if (!targetTab) return;
+
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+
+                tabContents.forEach(content => {
+                    if (content.id === `${targetTab}-content`) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+            });
+
+            // --- TASK MANAGER FUNCTIONS ---
+            const populateTimeDropdown = (selectElement, isOptional) => {
+                selectElement.innerHTML = '';
+                if (isOptional) {
+                    selectElement.add(new Option('Optional', ''));
+                }
+                for (let i = 15; i <= 240; i += 15) {
+                    let label = `${i} mins`;
+                    if (i >= 60) {
+                        const h = Math.floor(i / 60), m = i % 60;
+                        label = `${h} hour${h > 1 ? 's' : ''}${m > 0 ? ` ${m} mins` : ''}`;
+                    }
+                    selectElement.add(new Option(label, i));
+                }
+            };
+
+            const renderTasks = () => {
+                taskListContainer.innerHTML = tasks.length === 0 
+                    ? '<p class="text-gray-500 text-center py-4">Your tasks will appear here...</p>' 
+                    : tasks.map((task, index) => `
+                        <div class="task-item bg-gray-700 p-4 rounded-lg flex justify-between items-start gap-4 cursor-pointer hover:bg-gray-600" data-index="${index}">
+                            <div class="flex-grow pointer-events-none">
+                                <p class="font-bold text-white">${task.task_name}</p>
+                                <p class="text-sm text-gray-400">${task.duration_minutes} mins &bull; Priority: ${task.priority}</p>
+                            </div>
+                            <button data-index="${index}" class="remove-btn text-gray-500 hover:text-red-500 font-bold text-xl z-10">&times;</button>
+                        </div>`).join('');
+            };
+
+            const renderJson = () => {
+                jsonOutput.value = JSON.stringify(tasks, null, 2);
+            };
+
+            const updateTaskUI = () => {
+                renderTasks();
+                renderJson();
+            };
+
+            const resetTaskForm = () => {
+                taskForm.reset();
+                durationSelect.value = "60";
+                editIndex = null;
+                submitBtn.textContent = 'Add Task';
+                submitBtn.classList.replace('bg-yellow-600', 'bg-blue-600');
+                taskNameInput.focus();
+            };
+
+            const handleTaskFormSubmit = (e) => {
+                e.preventDefault();
+                const taskData = {
+                    task_name: taskNameInput.value.trim(),
+                    duration_minutes: parseInt(durationSelect.value, 10),
+                    due_date: dueDateInput.value || null,
+                    priority: priorityInput.value,
+                    project: projectInput.value.trim() || null,
+                    min_chunk_minutes: minChunkSelect.value ? parseInt(minChunkSelect.value, 10) : null,
+                    max_chunk_minutes: maxChunkSelect.value ? parseInt(maxChunkSelect.value, 10) : null
+                };
+                if (editIndex !== null) tasks[editIndex] = taskData;
+                else tasks.push(taskData);
+                updateTaskUI();
+                resetTaskForm();
+            };
+            
+            // ... (rest of task functions: remove, populate, modals, import)
+            const removeTask = (index) => {
+                tasks.splice(index, 1);
+                updateTaskUI();
+            };
+            
+            const populateTaskForm = (index, asTemplate = false) => {
+                const task = tasks[index];
+                if (!task) return;
+                taskNameInput.value = asTemplate ? '' : task.task_name;
+                durationSelect.value = task.duration_minutes;
+                minChunkSelect.value = task.min_chunk_minutes || '';
+                maxChunkSelect.value = task.max_chunk_minutes || '';
+                dueDateInput.value = task.due_date || '';
+                priorityInput.value = task.priority;
+                projectInput.value = task.project || '';
+                if (!asTemplate) {
+                    editIndex = index;
+                    submitBtn.textContent = 'Update Task';
+                    submitBtn.classList.replace('bg-blue-600', 'bg-yellow-600');
+                } else {
+                    resetTaskForm();
+                    taskNameInput.value = '';
+                }
+                taskNameInput.focus();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+             const openActionModal = (index) => {
+                selectedTaskIndex = index;
+                modalTaskName.textContent = tasks[index].task_name;
+                actionModal.classList.remove('hidden');
+            };
+            const closeActionModal = () => {
+                actionModal.classList.add('hidden');
+                selectedTaskIndex = null;
+            };
+
+            const handleFileImport = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedTasks = JSON.parse(event.target.result);
+                        if (!Array.isArray(importedTasks)) throw new Error('JSON is not an array.');
+                        const validTasks = importedTasks.filter(t => t && typeof t.task_name === 'string' && typeof t.duration_minutes === 'number');
+                        if(validTasks.length > 0) {
+                            tasks.push(...validTasks);
+                            updateTaskUI();
+                        } else {
+                            throw new Error('No valid tasks found.');
+                        }
+                    } catch (error) {
+                        alert(`Error: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+
+            // --- APPOINTMENT MANAGER FUNCTIONS ---
+            const renderAppointments = () => {
+                appointmentListContainer.innerHTML = appointments.length === 0
+                    ? '<p class="text-gray-500 text-center py-4">Your appointments will appear here...</p>'
+                    : appointments.map((appt, index) => `
+                        <div class="appointment-item bg-gray-700 p-4 rounded-lg flex justify-between items-center gap-4">
+                            <div>
+                                <p class="font-bold text-white">${appt.name}</p>
+                                <p class="text-sm text-gray-400">${appt.date} from ${appt.start} to ${appt.end}</p>
+                            </div>
+                            <button data-index="${index}" class="remove-appointment-btn text-gray-500 hover:text-red-500 font-bold text-xl">&times;</button>
+                        </div>`).join('');
+            };
+
+            const handleAppointmentFormSubmit = (e) => {
+                e.preventDefault();
+                const newAppointment = {
+                    name: appointmentNameInput.value.trim(),
+                    date: appointmentDateInput.value,
+                    start: startTimeInput.value,
+                    end: endTimeInput.value
+                };
+                // Basic validation
+                if (!newAppointment.name || !newAppointment.date || !newAppointment.start || !newAppointment.end) {
+                    alert('Please fill out all appointment fields.');
+                    return;
+                }
+                appointments.push(newAppointment);
+                appointments.sort((a,b) => new Date(`${a.date}T${a.start}`) - new Date(`${b.date}T${b.start}`));
+                renderAppointments();
+                appointmentForm.reset();
+            };
+            
+            const removeAppointment = (index) => {
+                appointments.splice(index, 1);
+                renderAppointments();
+            };
+
+            const handleDownloadICS = () => {
+                if (appointments.length === 0) {
+                    alert('No appointments to download.');
+                    return;
+                }
+                
+                const toICSDate = (dateStr, timeStr) => {
+                    const d = new Date(`${dateStr}T${timeStr}`);
+                    return d.toISOString().replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+                };
+                
+                let icsContent = [
+                    'BEGIN:VCALENDAR',
+                    'VERSION:2.0',
+                    'PRODID:-//AI-Secretary//Appointment Generator//EN'
+                ];
+
+                appointments.forEach(appt => {
+                    icsContent.push(
+                        'BEGIN:VEVENT',
+                        `UID:${new Date().getTime()}${Math.random()}@aisecretary.com`,
+                        `DTSTAMP:${toICSDate(new Date().toISOString().slice(0,10), new Date().toTimeString().slice(0,5))}`,
+                        `DTSTART:${toICSDate(appt.date, appt.start)}`,
+                        `DTEND:${toICSDate(appt.date, appt.end)}`,
+                        `SUMMARY:${appt.name}`,
+                        'END:VEVENT'
+                    );
+                });
+
+                icsContent.push('END:VCALENDAR');
+
+                const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'appointments.ics';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // --- EVENT LISTENERS ---
+            taskForm.addEventListener('submit', handleTaskFormSubmit);
+            taskListContainer.addEventListener('click', (e) => {
+                if (e.target.matches('.remove-btn')) removeTask(e.target.dataset.index);
+                else if (e.target.closest('.task-item')) openActionModal(e.target.closest('.task-item').dataset.index);
+            });
+            copyJsonBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(jsonOutput.value);
+                copyJsonBtn.textContent = 'Copied!';
+                setTimeout(() => copyJsonBtn.textContent = 'Copy', 1500);
+            });
+
+            appointmentForm.addEventListener('submit', handleAppointmentFormSubmit);
+            appointmentListContainer.addEventListener('click', (e) => {
+                 if (e.target.matches('.remove-appointment-btn')) removeAppointment(e.target.dataset.index);
+            });
+            downloadIcsBtn.addEventListener('click', handleDownloadICS);
+
+            // Modal & Import Listeners
+            editTaskBtn.addEventListener('click', () => { populateTaskForm(selectedTaskIndex, false); closeActionModal(); });
+            templateTaskBtn.addEventListener('click', () => { populateTaskForm(selectedTaskIndex, true); closeActionModal(); });
+            closeModalBtn.addEventListener('click', closeActionModal);
+            actionModal.addEventListener('click', (e) => { if (e.target === actionModal) closeActionModal(); });
+            importTasksBtn.addEventListener('click', () => jsonFileInput.click());
+            jsonFileInput.addEventListener('change', handleFileImport);
+            importInstructionsBtn.addEventListener('click', () => importModal.classList.remove('hidden'));
+            closeImportModalBtn.addEventListener('click', () => importModal.classList.add('hidden'));
+            importModal.addEventListener('click', (e) => { if (e.target === importModal) importModal.classList.add('hidden'); });
+
+            // Global keydown listener for modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (!actionModal.classList.contains('hidden')) closeActionModal();
+                    if (!importModal.classList.contains('hidden')) importModal.classList.add('hidden');
+                }
+            });
+            
+            // --- INITIAL SETUP ---
+            populateTimeDropdown(durationSelect, false);
+            durationSelect.value = "60";
+            populateTimeDropdown(minChunkSelect, true);
+            populateTimeDropdown(maxChunkSelect, true);
+            updateTaskUI();
+            renderAppointments();
+        });
+    </script>
+</body>
+</html>
+
