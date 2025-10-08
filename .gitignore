@@ -1,6 +1,6 @@
 .pdf
 .env
-.env
+.ics
 .env.local
 /package.json
 /package-lock.json
