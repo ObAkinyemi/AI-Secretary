@@ -1,9 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
-// import { configDotenv } from 'dotenv';
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("GEMINI_API_KEY is not set in your .env file");
+}
 
 // Initialize with your API key from the .env.local file
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_CLOUD_API_KEY);
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const generationConfig = {
   maxOutputTokens: 8192,
@@ -12,7 +20,7 @@ const generationConfig = {
 };
 
 const model = genAI.getGenerativeModel({
-  model: 'gemini-1.5-flash-latest',
+  model: 'gemini-2.5-flash',
   generationConfig,
 });
 
@@ -48,6 +56,7 @@ export async function POST(request) {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const scheduleText = response.text();
+    console.log(scheduleText);
     
     // 3. Send the generated schedule back to the frontend
     return NextResponse.json({ schedule: scheduleText });

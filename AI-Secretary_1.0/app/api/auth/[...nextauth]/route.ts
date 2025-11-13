@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import { authOptions } from "@/lib/auth"
 
+
 // --- DIAGNOSTIC LOGS ---
 // This will print the status of your environment variables to the terminal 
 // every time the authentication system is used.
