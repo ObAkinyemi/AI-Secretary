@@ -1,13 +1,22 @@
 import NextAuth from "next-auth"
+import Providers from "@/components/Providers"
 import { authOptions } from "@/lib/auth"
+
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const oCID = process.env.OAUTH_CID;
+const oCIDSecret = process.env.OAUTH_CID_SECRET;
+
 
 
 // --- DIAGNOSTIC LOGS ---
 // This will print the status of your environment variables to the terminal 
 // every time the authentication system is used.
 console.log("--- SERVER-SIDE AUTHENTICATION CHECK ---");
-console.log("GOOGLE_CLIENT_ID Loaded:", !!process.env.GOOGLE_CLIENT_ID);
-console.log("GOOGLE_CLIENT_SECRET Loaded:", !!process.env.GOOGLE_CLIENT_SECRET);
+console.log("GOOGLE_CLIENT_ID Loaded:", !!oCID);
+console.log("GOOGLE_CLIENT_SECRET Loaded:", !!oCIDSecret);
 console.log("NEXTAUTH_SECRET Loaded:", !!process.env.NEXTAUTH_SECRET);
 console.log("--------------------------------------");
 
