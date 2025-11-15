@@ -7,7 +7,7 @@ dotenv.config();
 const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
-  throw new Error("GEMINI_API_KEY is not set in your .env file");
+  throw new Error("GEMINI_API_KEY is not set in your environment variables");
 }
 
 // Initialize with your API key from the .env.local file
@@ -27,12 +27,22 @@ const model = genAI.getGenerativeModel({
 // This function handles POST requests to /api/generate-schedule
 export async function POST(request) {
   try {
+    // 2. --- ADD THE SECURITY CHECK ---
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      // If no session, deny access
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    // 3. --- END OF SECURITY CHECK ---
+    
     const { fixedAppointmentsText, flexibleTasksJson, schedulingRules } = await request.json();
 
     // Basic validation
     if (!fixedAppointmentsText || !flexibleTasksJson || !schedulingRules) {
         return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
+      
     }
+    
 
     // 1. Construct the detailed prompt
     const prompt = `
