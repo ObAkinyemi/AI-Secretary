@@ -6,9 +6,9 @@ export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       // Read the Client ID from your .env.local file
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientId: process.env.GOOGLE_OAUTH_CID as string,
       // Read the Client Secret from your .env.local file
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientSecret: process.env.GOOGLE_OAUTH_CID_SECRET as string,
       
       // This is the CRITICAL part for your app:
       // We are asking for permission to not only log in,

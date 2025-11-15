@@ -5,7 +5,7 @@ import { google } from "googleapis";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize the AI client for parsing
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_CLOUD_API_KEY as string);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
 // A helper function to parse the schedule text using AI
 async function parseScheduleWithAI(scheduleText: string): Promise<any[]> {
