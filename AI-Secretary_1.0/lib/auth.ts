@@ -25,18 +25,24 @@ export const authOptions: NextAuthOptions = {
   
   // These callbacks are needed to get the access token
   // back from Google so we can use it in our API routes.
+// ... existing code ...
   callbacks: {
     async jwt({ token, account }) {
       // If this is the user's first login, add the access token to the JWT
       if (account) {
-        token.accessToken = account.access_token;
+        // 1. Cast token to 'any' to add the custom property
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (token as any).accessToken = account.access_token;
       }
       return token;
     },
     async session({ session, token }) {
       // Add the access token to the session object
       // so we can access it from our API routes
-      session.accessToken = token.accessToken as string;
+      
+      // 2. Cast session to 'any' and get the token's accessToken
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (session as any).accessToken = (token as any).accessToken;
       return session;
     },
   },
