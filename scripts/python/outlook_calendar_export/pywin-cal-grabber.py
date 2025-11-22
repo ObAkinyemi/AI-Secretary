@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, filedialog
 from icalendar import Calendar
 
 # --- CORE LOGIC (Outlook & Exporting) ---
@@ -44,7 +44,7 @@ def get_calendars_from_outlook():
 
     return calendars
 
-def run_export_process(selected_calendars, start_date, end_date):
+def run_export_process(selected_calendars, start_date, end_date, output_path):
     """The heavy lifting: exports selected calendars to .ics and merges them."""
     merged_calendar = Calendar()
     merged_calendar.add('prodid', '-//AI Secretary//Outlook Exporter//')
@@ -74,11 +74,7 @@ def run_export_process(selected_calendars, start_date, end_date):
                 print(f"Error exporting {calendar_folder.Name}: {e}")
                 # We continue even if one fails
 
-    # Save to Desktop
-    desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
-    file_name = f"Merged_Schedule_{start_date.strftime('%d-%m-%Y')}_to_{end_date.strftime('%d-%m-%Y')}.ics"
-    output_path = os.path.join(desktop_path, file_name)
-
+    # Save to the user-selected path
     with open(output_path, 'wb') as f:
         f.write(merged_calendar.to_ical())
     
@@ -212,16 +208,31 @@ class CalendarApp(tk.Tk):
             messagebox.showerror("Invalid Format", "Please use DD/MM/YYYY format (e.g., 25/12/2024).")
             return
 
-        # 2. Processing
+        # 2. Ask User for Save Location
+        default_filename = f"Merged_Schedule_{start_date.strftime('%d-%m-%Y')}_to_{end_date.strftime('%d-%m-%Y')}.ics"
+        
+        output_path = filedialog.asksaveasfilename(
+            defaultextension=".ics",
+            initialfile=default_filename,
+            title="Save Merged Calendar As",
+            filetypes=[("iCalendar files", "*.ics"), ("All files", "*.*")]
+        )
+
+        # If user cancelled the dialog
+        if not output_path:
+            return
+
+        # 3. Processing
         selected_folders = [self.found_calendars[i] for i in selected_indices]
         
         try:
             self.btn_push.config(text="Exporting...", bg="#8ce99a", state="disabled")
             self.update()
 
-            output_path = run_export_process(selected_folders, start_date, end_date)
+            # Pass the chosen path to the processing function
+            final_path = run_export_process(selected_folders, start_date, end_date, output_path)
             
-            messagebox.showinfo("Success", f"Export Complete!\nSaved to Desktop:\n{os.path.basename(output_path)}")
+            messagebox.showinfo("Success", f"Export Complete!\nSaved to:\n{final_path}")
             
         except Exception as e:
             messagebox.showerror("Export Error", f"An error occurred during export:\n{e}")
