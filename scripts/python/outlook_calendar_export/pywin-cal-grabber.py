@@ -19,26 +19,42 @@ def connect_outlook():
         raise Exception(f"Could not connect to Outlook. Is it running?\nError: {e}")
 
 def get_calendars_from_outlook():
-    """Returns a list of Outlook folder objects that are calendars."""
+    """Returns a list of Outlook folder objects that are calendars, searching recursively."""
     namespace = connect_outlook()
     calendars = []
-    # Recursively or simply check default folders? 
-    # For simplicity matching previous script, we scan top-level folders
-    # but often Calendars are in the default 'Calendar' folder or subfolders.
-    # We'll stick to the previous logic: iterating namespace.Folders
-    for folder in namespace.Folders:
+    seen_ids = set()
+
+    def scan_folder_recursively(folder):
+        """Helper to scan a folder and its subfolders."""
         try:
-            if folder.DefaultItemType == 1:  # 1 = olAppointmentItem
-                calendars.append(folder)
-        except Exception:
-            pass
+            # Check if this specific folder is a calendar (1 = olAppointmentItem)
+            if folder.DefaultItemType == 1: 
+                if folder.EntryID not in seen_ids:
+                    calendars.append(folder)
+                    seen_ids.add(folder.EntryID)
             
-    # Also check the user's default calendar explicitly
+            # Now check all children of this folder
+            for subfolder in folder.Folders:
+                scan_folder_recursively(subfolder)
+        except Exception:
+            # Permission errors or special folders (like Public Folders) might fail; skip them.
+            pass
+
+    # 1. Start by scanning the Default Calendar and its subfolders
     try:
         default_cal = namespace.GetDefaultFolder(9) # 9 = olFolderCalendar
-        # Avoid duplicates if already found
-        if not any(c.EntryID == default_cal.EntryID for c in calendars):
-            calendars.insert(0, default_cal)
+        scan_folder_recursively(default_cal)
+        
+        # Also look at the 'root' of the default store to catch calendars at the same level
+        if default_cal.Parent:
+            scan_folder_recursively(default_cal.Parent)
+    except Exception:
+        pass
+
+    # 2. To be safe, scan all top-level stores (Accounts) to catch other mailboxes
+    try:
+        for store_root in namespace.Folders:
+            scan_folder_recursively(store_root)
     except Exception:
         pass
 
@@ -55,8 +71,11 @@ def run_export_process(selected_calendars, start_date, end_date, output_path):
             try:
                 exporter = calendar_folder.GetCalendarExporter()
                 exporter.IncludeWholeCalendar = False
+                
+                # FIX: Outlook requires full DateTime objects, not just Dates
                 exporter.StartDate = start_date
                 exporter.EndDate = end_date
+                
                 exporter.CalendarDetail = 2  # Full Details
                 exporter.IncludeAttachments = False
                 exporter.IncludePrivateDetails = True
@@ -198,8 +217,13 @@ class CalendarApp(tk.Tk):
         end_str = self.entry_end.get()
 
         try:
-            start_date = datetime.datetime.strptime(start_str, "%d/%m/%Y").date()
-            end_date = datetime.datetime.strptime(end_str, "%d/%m/%Y").date()
+            # FIX: Do NOT convert to .date(). Keep as full datetime objects for Outlook.
+            start_date = datetime.datetime.strptime(start_str, "%d/%m/%Y")
+            end_date = datetime.datetime.strptime(end_str, "%d/%m/%Y")
+            
+            # FIX: Set the end date to the very end of that day (23:59:59) 
+            # so we include events happening on the final day.
+            end_date = end_date.replace(hour=23, minute=59, second=59)
             
             if start_date > end_date:
                 messagebox.showerror("Invalid Dates", "Start date must be before end date.")
@@ -218,7 +242,6 @@ class CalendarApp(tk.Tk):
             filetypes=[("iCalendar files", "*.ics"), ("All files", "*.*")]
         )
 
-        # If user cancelled the dialog
         if not output_path:
             return
 
@@ -229,7 +252,6 @@ class CalendarApp(tk.Tk):
             self.btn_push.config(text="Exporting...", bg="#8ce99a", state="disabled")
             self.update()
 
-            # Pass the chosen path to the processing function
             final_path = run_export_process(selected_folders, start_date, end_date, output_path)
             
             messagebox.showinfo("Success", f"Export Complete!\nSaved to:\n{final_path}")
