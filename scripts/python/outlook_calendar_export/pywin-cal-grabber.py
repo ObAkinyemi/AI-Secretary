@@ -1,173 +1,233 @@
-# outlook_exporter/export_calendar.py
-
 import win32com.client
 import datetime
 import os
-import argparse
+import sys
 import tempfile
-from icalendar import Calendar, Event
+import tkinter as tk
+from tkinter import messagebox, ttk
+from icalendar import Calendar
 
-def get_all_calendars(namespace):
-    """
-    Finds all calendar folders in the user's Outlook profile.
-    """
-    calendars = []
-    # olAppointmentItem = 1
-    for folder in namespace.Folders:
-        try:
-            if folder.DefaultItemType == 1: # 1 = olAppointmentItem
-                calendars.append(folder)
-        except Exception:
-            pass # Ignore folders that fail access
-    return calendars
+# --- CORE LOGIC (Outlook & Exporting) ---
 
-def select_calendars(calendar_list):
-    """
-    Presents a numbered list of calendars and asks the user to select which ones to export.
-    """
-    if not calendar_list:
-        print("No calendar folders found.")
-        return []
-
-    print("\n--- Available Calendars ---")
-    for i, calendar in enumerate(calendar_list):
-        print(f"  {i + 1}: {calendar.Name}")
-
-    print("\nEnter the numbers of the calendars to export, separated by commas (e.g., 1, 3):")
+def connect_outlook():
+    """Connects to Outlook MAPI namespace."""
     try:
-        selection_str = input("> ")
-        selected_indices = [int(i.strip()) - 1 for i in selection_str.split(',')]
-        
-        selected_calendars = []
-        for index in selected_indices:
-            if 0 <= index < len(calendar_list):
-                selected_calendars.append(calendar_list[index])
-            else:
-                print(f"Warning: Index {index + 1} is out of range. Skipping.")
-        
-        return selected_calendars
-        
-    except ValueError:
-        print("Invalid input. Please enter numbers separated by commas.")
-        return []
-    except Exception as e:
-        print(f"An error occurred during selection: {e}")
-        return []
-
-def export_and_merge_calendars(calendar_list, start_date, end_date):
-    """
-    Exports multiple calendars for a date range and merges them into a single .ics file.
-    """
-    try:
-        merged_calendar = Calendar()
-        merged_calendar.add('prodid', '-//Your AI Secretary//Outlook Exporter//')
-        merged_calendar.add('version', '2.0')
-
-        # Use a temporary directory to store intermediate .ics files
-        with tempfile.TemporaryDirectory() as temp_dir:
-            print(f"\nExporting {len(calendar_list)} calendar(s)...")
-
-            for calendar_folder in calendar_list:
-                print(f"  Processing: '{calendar_folder.Name}'...")
-                try:
-                    exporter = calendar_folder.GetCalendarExporter()
-                    
-                    # Set export options
-                    exporter.IncludeWholeCalendar = False
-                    exporter.StartDate = start_date
-                    exporter.EndDate = end_date
-                    exporter.CalendarDetail = 2  # 2 = Full Details
-                    exporter.IncludeAttachments = False
-                    exporter.IncludePrivateDetails = True
-                    exporter.RestrictToFolder = True
-                    
-                    # Define a temporary file path
-                    temp_file_path = os.path.join(temp_dir, f"temp_{calendar_folder.Name}.ics")
-                    
-                    # 1. Export this calendar to its own .ics file
-                    exporter.SaveAsICal(temp_file_path)
-                    
-                    # 2. Read the exported file and merge its events
-                    with open(temp_file_path, 'r', encoding='utf-8') as f:
-                        temp_cal_data = f.read()
-                        temp_cal = Calendar.from_ical(temp_cal_data)
-                        
-                        # Add each event from the temp calendar to the main one
-                        for component in temp_cal.walk('vevent'):
-                            merged_calendar.add_component(component)
-                            
-                except Exception as e:
-                    print(f"    WARNING: Could not export calendar '{calendar_folder.Name}'. Error: {e}")
-
-        # 3. Define the final output file path
-        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
-        file_name = f"Merged_Export_{start_date.strftime('%Y-%m-%d')}_to_{end_date.strftime('%Y-%m-%d')}.ics"
-        output_path = os.path.join(desktop_path, file_name)
-
-        print(f"\nMerging calendars and saving to: {output_path}")
-
-        # 4. Save the merged calendar to the final .ics file
-        with open(output_path, 'wb') as f:
-            f.write(merged_calendar.to_ical())
-
-        print("\n--------------------------------------------------")
-        print("✅ Success! Calendars merged and exported.")
-        print(f"File saved to your Desktop as: {file_name}")
-        print("--------------------------------------------------")
-
-    except Exception as e:
-        print("\n--------------------------------------------------")
-        print("❌ An error occurred:")
-        print(e)
-        print("\nTroubleshooting steps:")
-        print("1. Make sure Outlook is running.")
-        print("2. Ensure you have run 'pip install pywin32 icalendar'.")
-        print("--------------------------------------------------")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Export and merge multiple Outlook calendars to a single .ics file.")
-    parser.add_argument("--start", help="Start date in YYYY-MM-DD format.")
-    parser.add_argument("--end", help="End date in YYYY-MM-DD format.")
-    args = parser.parse_args()
-
-    start_export_date = None
-    end_export_date = None
-
-    if args.start and args.end:
-        try:
-            start_export_date = datetime.datetime.strptime(args.start, "%Y-%m-%d").date()
-            end_export_date = datetime.datetime.strptime(args.end, "%Y-%m-%d").date()
-        except ValueError:
-            print("Error: Dates must be in YYYY-MM-DD format.")
-            exit()
-    else:
-        # Default behavior: Export the next full week (Monday to Sunday)
-        print("No date range specified. Defaulting to next full week.")
-        today = datetime.date.today()
-        # Find the next Monday
-        start_export_date = today + datetime.timedelta(days=-today.weekday(), weeks=1)
-        # Find the following Sunday
-        end_export_date = start_export_date + datetime.timedelta(days=6)
-    
-    try:
-        print("Connecting to Outlook...")
         outlook = win32com.client.Dispatch("Outlook.Application")
         namespace = outlook.GetNamespace("MAPI")
-        
-        all_calendars = get_all_calendars(namespace)
-        selected_calendars = select_calendars(all_calendars)
-        
-        if selected_calendars:
-            print(f"Exporting date range: {start_export_date.strftime('%Y-%m-%d')} to {end_export_date.strftime('%Y-%m-%d')}")
-            export_and_merge_calendars(selected_calendars, start_export_date, end_export_date)
-        else:
-            print("No calendars selected. Exiting.")
-
+        return namespace
     except Exception as e:
-        print("\n--------------------------------------------------")
-        print("❌ Could not connect to Outlook.")
-        print("1. Make sure the Outlook desktop application is running.")
-        print("2. If Outlook is open, try restarting it.")
-        print(e)
-        print("--------------------------------------------------")
+        raise Exception(f"Could not connect to Outlook. Is it running?\nError: {e}")
+
+def get_calendars_from_outlook():
+    """Returns a list of Outlook folder objects that are calendars."""
+    namespace = connect_outlook()
+    calendars = []
+    # Recursively or simply check default folders? 
+    # For simplicity matching previous script, we scan top-level folders
+    # but often Calendars are in the default 'Calendar' folder or subfolders.
+    # We'll stick to the previous logic: iterating namespace.Folders
+    for folder in namespace.Folders:
+        try:
+            if folder.DefaultItemType == 1:  # 1 = olAppointmentItem
+                calendars.append(folder)
+        except Exception:
+            pass
+            
+    # Also check the user's default calendar explicitly
+    try:
+        default_cal = namespace.GetDefaultFolder(9) # 9 = olFolderCalendar
+        # Avoid duplicates if already found
+        if not any(c.EntryID == default_cal.EntryID for c in calendars):
+            calendars.insert(0, default_cal)
+    except Exception:
+        pass
+
+    return calendars
+
+def run_export_process(selected_calendars, start_date, end_date):
+    """The heavy lifting: exports selected calendars to .ics and merges them."""
+    merged_calendar = Calendar()
+    merged_calendar.add('prodid', '-//AI Secretary//Outlook Exporter//')
+    merged_calendar.add('version', '2.0')
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for calendar_folder in selected_calendars:
+            try:
+                exporter = calendar_folder.GetCalendarExporter()
+                exporter.IncludeWholeCalendar = False
+                exporter.StartDate = start_date
+                exporter.EndDate = end_date
+                exporter.CalendarDetail = 2  # Full Details
+                exporter.IncludeAttachments = False
+                exporter.IncludePrivateDetails = True
+                exporter.RestrictToFolder = True
+                
+                temp_file_path = os.path.join(temp_dir, f"temp_{calendar_folder.Name}.ics")
+                exporter.SaveAsICal(temp_file_path)
+                
+                with open(temp_file_path, 'r', encoding='utf-8') as f:
+                    temp_cal_data = f.read()
+                    temp_cal = Calendar.from_ical(temp_cal_data)
+                    for component in temp_cal.walk('vevent'):
+                        merged_calendar.add_component(component)
+            except Exception as e:
+                print(f"Error exporting {calendar_folder.Name}: {e}")
+                # We continue even if one fails
+
+    # Save to Desktop
+    desktop_path = os.path.join(os.environ['USERPROFILE'], 'Desktop')
+    file_name = f"Merged_Schedule_{start_date.strftime('%d-%m-%Y')}_to_{end_date.strftime('%d-%m-%Y')}.ics"
+    output_path = os.path.join(desktop_path, file_name)
+
+    with open(output_path, 'wb') as f:
+        f.write(merged_calendar.to_ical())
+    
+    return output_path
+
+# --- GUI CLASS ---
+
+class CalendarApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Outlook Calendar Exporter")
+        self.geometry("600x450")
+        self.configure(bg="#f0f0f0")
+
+        # Data storage
+        self.found_calendars = [] # List of Outlook folder objects
+        self.checkbox_vars = []   # List of BooleanVars for checkboxes
+
+        # --- UI LAYOUT ---
+        
+        # 1. Left Panel (Calendar List)
+        left_frame = tk.Frame(self, bg="white", bd=2, relief=tk.GROOVE)
+        left_frame.place(x=20, y=20, width=250, height=400)
+        
+        tk.Label(left_frame, text="Calendars", font=("Arial", 12, "bold"), bg="white").pack(pady=10)
+        
+        # Scrollable Frame for checkboxes
+        self.canvas = tk.Canvas(left_frame, bg="white")
+        self.scrollbar = tk.Scrollbar(left_frame, orient="vertical", command=self.canvas.yview)
+        self.scrollable_frame = tk.Frame(self.canvas, bg="white")
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.scrollbar.pack(side="right", fill="y")
+
+        # 2. Right Panel (Controls)
+        right_frame = tk.Frame(self, bg="#f0f0f0")
+        right_frame.place(x=290, y=20, width=280, height=400)
+
+        # Red "Pull Calendars" Button
+        self.btn_pull = tk.Button(right_frame, text="Pull Calendars", bg="#ff6b6b", fg="white", 
+                                  font=("Arial", 12, "bold"), height=2, relief=tk.FLAT,
+                                  command=self.pull_calendars_action)
+        self.btn_pull.pack(fill="x", pady=(0, 20))
+
+        # Green "Push iCS" Button
+        self.btn_push = tk.Button(right_frame, text="Push iCS", bg="#51cf66", fg="white", 
+                                  font=("Arial", 12, "bold"), height=2, relief=tk.FLAT,
+                                  command=self.push_ics_action)
+        self.btn_push.pack(fill="x", pady=(0, 40))
+
+        # Date Range Section
+        tk.Label(right_frame, text="Date Range", font=("Arial", 14, "bold"), bg="#f0f0f0").pack(pady=(0, 10))
+        
+        # Date Inputs Container
+        date_frame = tk.Frame(right_frame, bg="#f0f0f0")
+        date_frame.pack(fill="x")
+
+        # Defaults
+        today = datetime.date.today()
+        next_week = today + datetime.timedelta(days=7)
+
+        # Start Date
+        tk.Label(date_frame, text="Start Date (DD/MM/YYYY)", bg="#f0f0f0").pack(anchor="w")
+        self.entry_start = tk.Entry(date_frame, font=("Arial", 11), justify="center")
+        self.entry_start.insert(0, today.strftime("%d/%m/%Y"))
+        self.entry_start.pack(fill="x", pady=(0, 15))
+
+        # End Date
+        tk.Label(date_frame, text="End Date (DD/MM/YYYY)", bg="#f0f0f0").pack(anchor="w")
+        self.entry_end = tk.Entry(date_frame, font=("Arial", 11), justify="center")
+        self.entry_end.insert(0, next_week.strftime("%d/%m/%Y"))
+        self.entry_end.pack(fill="x")
+
+    def pull_calendars_action(self):
+        """Connects to Outlook and populates the left list."""
+        try:
+            self.btn_pull.config(text="Loading...", state="disabled")
+            self.update() # Force UI refresh
+
+            cals = get_calendars_from_outlook()
+            self.found_calendars = cals
+            
+            # Clear existing checkboxes
+            for widget in self.scrollable_frame.winfo_children():
+                widget.destroy()
+            self.checkbox_vars = []
+
+            if not cals:
+                tk.Label(self.scrollable_frame, text="No calendars found", bg="white").pack(pady=20)
+            else:
+                for cal in cals:
+                    var = tk.BooleanVar()
+                    self.checkbox_vars.append(var)
+                    cb = tk.Checkbutton(self.scrollable_frame, text=cal.Name, variable=var, 
+                                        bg="white", anchor="w", font=("Arial", 10))
+                    cb.pack(fill="x", padx=5, pady=2)
+
+            self.btn_pull.config(text="Pull Calendars", state="normal")
+
+        except Exception as e:
+            messagebox.showerror("Connection Error", str(e))
+            self.btn_pull.config(text="Pull Calendars", state="normal")
+
+    def push_ics_action(self):
+        """Exports the selected calendars."""
+        # 1. Validation
+        selected_indices = [i for i, var in enumerate(self.checkbox_vars) if var.get()]
+        if not selected_indices:
+            messagebox.showwarning("Selection Required", "Please select at least one calendar from the list.")
+            return
+
+        start_str = self.entry_start.get()
+        end_str = self.entry_end.get()
+
+        try:
+            start_date = datetime.datetime.strptime(start_str, "%d/%m/%Y").date()
+            end_date = datetime.datetime.strptime(end_str, "%d/%m/%Y").date()
+            
+            if start_date > end_date:
+                messagebox.showerror("Invalid Dates", "Start date must be before end date.")
+                return
+        except ValueError:
+            messagebox.showerror("Invalid Format", "Please use DD/MM/YYYY format (e.g., 25/12/2024).")
+            return
+
+        # 2. Processing
+        selected_folders = [self.found_calendars[i] for i in selected_indices]
+        
+        try:
+            self.btn_push.config(text="Exporting...", bg="#8ce99a", state="disabled")
+            self.update()
+
+            output_path = run_export_process(selected_folders, start_date, end_date)
+            
+            messagebox.showinfo("Success", f"Export Complete!\nSaved to Desktop:\n{os.path.basename(output_path)}")
+            
+        except Exception as e:
+            messagebox.showerror("Export Error", f"An error occurred during export:\n{e}")
+        finally:
+            self.btn_push.config(text="Push iCS", bg="#51cf66", state="normal")
+
+if __name__ == "__main__":
+    app = CalendarApp()
+    app.mainloop()
