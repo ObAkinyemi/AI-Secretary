@@ -72,14 +72,17 @@ def run_export_process(selected_calendars, start_date, end_date, output_path):
                 exporter = calendar_folder.GetCalendarExporter()
                 exporter.IncludeWholeCalendar = False
                 
-                # FIX: Outlook requires full DateTime objects, not just Dates
+                # Outlook requires full DateTime objects
                 exporter.StartDate = start_date
                 exporter.EndDate = end_date
                 
                 exporter.CalendarDetail = 2  # Full Details
                 exporter.IncludeAttachments = False
                 exporter.IncludePrivateDetails = True
-                exporter.RestrictToFolder = True
+                
+                # REMOVED: exporter.RestrictToFolder = True
+                # Reason: When using GetCalendarExporter() from a folder, this property 
+                # is read-only (implicitly True), so setting it causes a crash.
                 
                 temp_file_path = os.path.join(temp_dir, f"temp_{calendar_folder.Name}.ics")
                 exporter.SaveAsICal(temp_file_path)
