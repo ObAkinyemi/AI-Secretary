@@ -8,6 +8,7 @@ import AppointmentManagerView from "@/components/views/AppointmentManager";
 import GenerateScheduleView from "@/components/views/GenerateSchedule";
 import SettingsView from "@/components/views/Settings";
 import { useSession, signIn, signOut } from "next-auth/react";
+import Link from "next/link"; 
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("Task Manager");
@@ -25,16 +26,13 @@ export default function Home() {
 
   return (
     <ScheduleProvider>
-      <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
-        <header className="relative pt-8 pb-4 px-4 flex justify-center items-center">
-          
-          {/* Centered Titles */}
+      <div className="min-h-screen bg-gray-900 text-gray-100 font-sans flex flex-col">
+        <header className="relative pt-8 pb-4 px-4 flex justify-center items-center flex-shrink-0">
           <div className="text-center z-0">
             <h1 className="text-3xl font-extrabold text-white tracking-tight">AI Secretary</h1>
             <p className="text-gray-400 mt-1">Task & Appointment Assistant</p>
           </div>
 
-          {/* Absolute positioned Auth Button (Top Right) */}
           <div className="absolute top-8 right-6 z-10">
             {session ? (
               <div className="flex flex-col items-end sm:flex-row sm:items-center gap-3">
@@ -59,13 +57,25 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="container mx-auto px-4 pb-12">
+        <main className="container mx-auto px-4 pb-12 flex-grow flex flex-col">
           <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
           
-          <div className="animate-in fade-in duration-300">
+          <div className="animate-in fade-in duration-300 flex-grow">
             {renderView()}
           </div>
         </main>
+
+        {/* Footer with Safety Link */}
+        <footer className="py-6 text-center border-t border-gray-800 mt-auto flex-shrink-0">
+          <div className="flex justify-center gap-6">
+            <Link 
+              href="/safety" 
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
+            >
+              Safety & Legal Information
+            </Link>
+          </div>
+        </footer>
       </div>
     </ScheduleProvider>
   );
