@@ -2,8 +2,8 @@
 
 # dependencies
 /node_modules
-/'UI mockup'
-/test-components
+./'UI mockup'
+./test-components
 /.pnp
 .pnp.*
 .yarn/*
