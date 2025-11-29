@@ -14,9 +14,28 @@ export interface Task {
   category: string;
 }
 
-export interface WorkingHours {
-  start: string; // "09:00"
-  end: string;   // "17:00"
+export interface SettingsState {
+  workingHours: {
+    start: string; // "08:00"
+    end: string;   // "22:00"
+  };
+  bufferTimes: {
+    appointments: number; // 15
+    tasks: number;        // 10
+  };
+  routines: {
+    wakeUp: string;   // "06:15"
+    bedtime: string;  // "22:30"
+  };
+  taskDefaults: {
+    duration: number; // 60
+    minChunk: number; // 15
+    maxChunk: number; // 60
+  };
+  calendar: {
+    view: "Day" | "Week" | "Agenda";
+    timezone: string;
+  };
 }
 
 interface ScheduleContextType {
@@ -24,18 +43,23 @@ interface ScheduleContextType {
   appointments: Appointment[];
   rules: string[];
   categories: string[];
-  workingHours: WorkingHours;
+  settings: SettingsState;
+  
   addTask: (task: Task) => void;
   updateTask: (id: string, updatedTask: Task) => void;
   removeTask: (id: string) => void;
   setTasks: (tasks: Task[]) => void;
+  
   addAppointment: (apt: Appointment) => void;
   updateAppointment: (id: string, updatedApt: Appointment) => void;
   removeAppointment: (id: string) => void;
   setAppointments: (apts: Appointment[]) => void;
+  
   setRules: (rules: string[]) => void;
+  
+  // Settings Updaters
   updateCategories: (cats: string[]) => void;
-  setWorkingHours: (hours: WorkingHours) => void;
+  updateSettings: (newSettings: Partial<SettingsState>) => void;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -50,10 +74,13 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     "Physical",
     "Military",
   ]);
-  // Default Working Hours
-  const [workingHours, setWorkingHoursState] = useState<WorkingHours>({
-    start: "08:00",
-    end: "22:00"
+
+  const [settings, setSettingsState] = useState<SettingsState>({
+    workingHours: { start: "08:00", end: "22:00" },
+    bufferTimes: { appointments: 15, tasks: 10 },
+    routines: { wakeUp: "06:15", bedtime: "22:30" },
+    taskDefaults: { duration: 60, minChunk: 30, maxChunk: 120 },
+    calendar: { view: "Week", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" }
   });
 
   // Load from LocalStorage on mount
@@ -61,12 +88,14 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     const savedTasks = localStorage.getItem("ais_tasks");
     const savedApts = localStorage.getItem("ais_apts");
     const savedRules = localStorage.getItem("ais_rules");
-    const savedHours = localStorage.getItem("ais_hours");
+    const savedCats = localStorage.getItem("ais_categories");
+    const savedSettings = localStorage.getItem("ais_settings");
     
     if (savedTasks) setTasksState(JSON.parse(savedTasks));
     if (savedApts) setAppointmentsState(JSON.parse(savedApts));
     if (savedRules) setRulesState(JSON.parse(savedRules));
-    if (savedHours) setWorkingHoursState(JSON.parse(savedHours));
+    if (savedCats) setCategories(JSON.parse(savedCats));
+    if (savedSettings) setSettingsState({ ...settings, ...JSON.parse(savedSettings) }); // Merge defaults
   }, []);
 
   // Save to LocalStorage on change
@@ -74,8 +103,9 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("ais_tasks", JSON.stringify(tasks));
     localStorage.setItem("ais_apts", JSON.stringify(appointments));
     localStorage.setItem("ais_rules", JSON.stringify(rules));
-    localStorage.setItem("ais_hours", JSON.stringify(workingHours));
-  }, [tasks, appointments, rules, workingHours]);
+    localStorage.setItem("ais_categories", JSON.stringify(categories));
+    localStorage.setItem("ais_settings", JSON.stringify(settings));
+  }, [tasks, appointments, rules, categories, settings]);
 
   const addTask = (task: Task) => setTasksState([...tasks, task]);
   const updateTask = (id: string, t: Task) => setTasksState(tasks.map(x => x.id === id ? t : x));
@@ -88,16 +118,20 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
   const setAppointments = (a: Appointment[]) => setAppointmentsState(a);
 
   const setRules = (r: string[]) => setRulesState(r);
+  
   const updateCategories = (c: string[]) => setCategories(c);
-  const setWorkingHours = (h: WorkingHours) => setWorkingHoursState(h);
+  
+  const updateSettings = (newSettings: Partial<SettingsState>) => {
+    setSettingsState((prev) => ({ ...prev, ...newSettings }));
+  };
 
   return (
     <ScheduleContext.Provider
       value={{
-        tasks, appointments, rules, categories, workingHours,
+        tasks, appointments, rules, categories, settings,
         addTask, updateTask, removeTask, setTasks,
         addAppointment, updateAppointment, removeAppointment, setAppointments,
-        setRules, updateCategories, setWorkingHours
+        setRules, updateCategories, updateSettings
       }}
     >
       {children}

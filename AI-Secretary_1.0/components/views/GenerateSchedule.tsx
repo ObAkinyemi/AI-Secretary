@@ -5,21 +5,19 @@ import SchedulingRules from "../SchedulingRules";
 import ScheduleDisplay from "../schedule/ScheduleDisplay"; 
 import { useSchedule } from "@/context/ScheduleContext";
 import { generateICS } from "@/lib/ics-utils";
-// Removed: import { runScheduler } ... 
 import { ArrowRight, Loader2 } from "lucide-react";
 
-// Define the shape here locally since we aren't importing the library anymore
 interface ScheduledBlock {
   id: string;
   name: string;
-  startTime: string | Date; // API returns string
-  endTime: string | Date;   // API returns string
+  startTime: string | Date; 
+  endTime: string | Date;   
   type: "task" | "appointment";
   isChunk?: boolean;
 }
 
 export default function GenerateScheduleView() {
-  const { tasks, appointments, rules } = useSchedule();
+  const { tasks, appointments, rules, settings } = useSchedule(); 
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSchedule, setGeneratedSchedule] = useState<ScheduledBlock[]>([]);
@@ -36,55 +34,44 @@ export default function GenerateScheduleView() {
     setIsGenerating(true);
 
     try {
-      // Call the API
       const response = await fetch("/api/generate-schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tasks, appointments, rules }),
+        body: JSON.stringify({ tasks, appointments, rules, settings }), 
       });
 
-      if (!response.ok) throw new Error("Failed to generate schedule");
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate schedule");
+      }
       
-      // Merge the fixed appointments (for display) with the new AI tasks
-      // The AI might return appointments too, but usually we just want tasks back.
-      // Let's assume the AI returns JUST the new tasks or a full mixed schedule.
-      // For safety, let's trust the AI's output fully if it includes everything, 
-      // OR merge if it only returns tasks.
-      // For this prompt, let's assume the AI returns just the new TASK blocks.
-      
-      // Actually, to make the display complete, let's map our existing appointments to the block format
-      // and combine them with the AI's result.
       const appointmentBlocks: ScheduledBlock[] = appointments.map(a => ({
           id: a.id,
           name: a.name,
-          startTime: `${a.date}T${a.startTime}:00`, // Simple ISO construction
+          startTime: `${a.date}T${a.startTime}:00`, 
           endTime: `${a.date}T${a.endTime}:00`,
           type: "appointment"
       }));
 
-      // Combine and Sort
       const combined = [...appointmentBlocks, ...data.schedule].sort((a, b) => 
         new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
       );
 
       setGeneratedSchedule(combined);
 
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setError("An error occurred while generating the schedule. Please try again.");
+      setError(e.message || "An error occurred while generating the schedule.");
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handlePushToICS = () => {
-     // Filter: Only export "task" blocks
      const taskBlocks = generatedSchedule.filter(b => b.type === "task");
      
      const eventsToExport = taskBlocks.map(b => ({
-       // Pass the ID if available, or allow generateICS to create one
        id: b.id,
        taskName: b.name,
        startTime: new Date(b.startTime),
