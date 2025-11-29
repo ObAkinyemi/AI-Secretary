@@ -19,9 +19,12 @@ export default function TaskQueue() {
   const { tasks, setTasks, removeTask } = useSchedule();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // State for Modal
+  // State for Modals
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [modalMode, setModalMode] = useState<"edit" | "template" | null>(null);
+  
+  // NEW: State for Format Guide Modal
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   const handleJsonUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,20 +80,31 @@ export default function TaskQueue() {
     <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg h-full flex flex-col max-h-[600px]">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-white">Task Queue</h2>
-        <div className="flex gap-2">
-            <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                accept=".json"
-                onChange={handleJsonUpload}
-            />
+        
+        <div className="flex items-center gap-4">
+            {/* NEW: Format Guide Link */}
             <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2 px-3 rounded flex items-center gap-1"
+                onClick={() => setShowFormatGuide(true)}
+                className="text-sm text-gray-400 hover:text-white transition-colors"
             >
-                <Upload className="w-3 h-3" /> Import Tasks
+                JSON Format Guide
             </button>
+
+            <div className="flex gap-2">
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept=".json"
+                    onChange={handleJsonUpload}
+                />
+                <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-2 px-3 rounded flex items-center gap-1"
+                >
+                    <Upload className="w-3 h-3" /> Import Tasks
+                </button>
+            </div>
         </div>
       </div>
 
@@ -111,7 +125,6 @@ export default function TaskQueue() {
                     </p>
                 </div>
                 
-                {/* Delete Button - stops propagation to prevent opening modal */}
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -127,7 +140,7 @@ export default function TaskQueue() {
         )}
       </div>
 
-      {/* MODAL FOR ACTIONS */}
+      {/* Existing Modal for Edit/Template */}
       <Modal 
         isOpen={!!selectedTask && !modalMode} 
         onClose={closeModal} 
@@ -149,7 +162,6 @@ export default function TaskQueue() {
         </div>
       </Modal>
 
-      {/* MODAL FOR EDIT/TEMPLATE FORM */}
       <Modal
         isOpen={!!selectedTask && !!modalMode}
         onClose={closeModal}
@@ -160,6 +172,39 @@ export default function TaskQueue() {
             mode={modalMode || "add"} 
             onComplete={closeModal} 
           />
+      </Modal>
+
+      {/* NEW: Modal for JSON Format Guide */}
+      <Modal
+        isOpen={showFormatGuide}
+        onClose={() => setShowFormatGuide(false)}
+        title="JSON Import Instructions"
+      >
+        <div className="space-y-4 text-gray-300">
+            <p>
+                To import tasks, upload a JSON file containing an array of task objects. Each object must have a <code className="bg-gray-700 text-green-400 px-1 rounded font-mono text-sm">task_name</code> and a <code className="bg-gray-700 text-green-400 px-1 rounded font-mono text-sm">duration_minutes</code>.
+            </p>
+            <p>
+                All other fields are optional. The structure should look like this:
+            </p>
+            <div className="bg-gray-950 p-4 rounded-lg border border-gray-700 font-mono text-xs text-blue-300 overflow-auto max-h-64">
+<pre>{`[
+  {
+    "task_name": "Study Physics",
+    "duration_minutes": 120,
+    "min_chunk": 30,
+    "max_chunk": 120,
+    "days_to_complete": 7,
+    "priority": "High",
+    "category": "Academic"
+  },
+  {
+    "task_name": "Call Mom",
+    "duration_minutes": 15
+  }
+]`}</pre>
+            </div>
+        </div>
       </Modal>
 
     </div>

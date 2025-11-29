@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 // Define input types
 interface AppointmentData {
@@ -22,15 +22,15 @@ export async function POST(request: Request) {
   try {
     const { tasks, appointments, rules, settings } = await request.json();
 
-    if (!process.env.GOOGLE_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       console.error("[app/api/generate-schedule/route.ts] GEMINI_API_KEY is missing or incorrect.");
       return NextResponse.json(
-        { error: "Google API Key is missing or incorrect in .env.local" },
+        { error: "Google API Key is missing or incorrect in .env.local. Or api key name incorrect in route." },
         { status: 500 }
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const wh = settings?.workingHours || { start: "08:00", end: "22:00" };
     const rt = settings?.routines || { wakeUp: "06:15", bedtime: "22:30" };
