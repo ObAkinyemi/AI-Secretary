@@ -59,20 +59,38 @@ export default function PrivacyPolicy() {
           <h2 className="text-xl font-semibold text-white mb-3">5. Data Storage</h2>
           <p>
             Your tasks, rules, and settings are stored locally on your device (in your browser&apos;s Local Storage). 
-            We do not maintain a central database of your personal tasks.
+            We do not maintain a central database of your personal tasks. This means your personal schedule data effectively never leaves your computer, except for the transient processing request sent to the AI.
           </p>
         </section>
 
+        <section className="mb-6 bg-red-900/20 border border-red-500/50 p-4 rounded-lg">
+          <h2 className="text-xl font-semibold text-red-300 mb-3">6. Experimental Nature & Security Warning</h2>
+          <p className="mb-2">
+            <strong>Please Read Carefully:</strong> AI Secretary is currently in an <strong>experimental stage</strong> of development.
+          </p>
+          <ul className="list-disc pl-5 space-y-2 text-gray-300">
+            <li>
+              There may be software bugs, glitches, or unexpected behaviors in the scheduling logic.
+            </li>
+            <li>
+              While we use standard encryption (HTTPS) and secure authentication (Google OAuth), there may be minor security vulnerabilities inherent to experimental software.
+            </li>
+            <li>
+              <strong>Recommendation:</strong> Do NOT input highly sensitive, confidential, or financial information into this application (e.g., passwords, bank details, medical records). Use generalized task names (e.g., &quot;Client Meeting&quot; instead of &quot;Meeting with John Doe regarding Patent #123&quot;).
+            </li>
+          </ul>
+        </section>
+
         <section className="mb-6">
-          <h2 className="text-xl font-semibold text-white mb-3">6. Contact Us</h2>
+          <h2 className="text-xl font-semibold text-white mb-3">7. Contact Us</h2>
           <p>
             If you have any questions about this Privacy Policy, please contact us.
           </p>
         </section>
 
         <div className="mt-8 pt-6 border-t border-gray-700">
-          <Link href="/" className="text-blue-400 hover:text-blue-300 hover:underline">
-            &larr; Back to App
+          <Link href="/safety" className="text-blue-400 hover:text-blue-300 hover:underline">
+            &larr; Back to Safety Hub
           </Link>
         </div>
       </div>
