@@ -3,6 +3,21 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
+// Define interfaces to avoid 'any' types
+interface AppointmentData {
+  name: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+}
+
+interface TaskData {
+  taskName: string;
+  duration: number;
+  priority: string;
+  category: string;
+}
+
 export async function POST(request: Request) {
   try {
     const { tasks, appointments, rules, settings } = await request.json();
@@ -35,7 +50,7 @@ export async function POST(request: Request) {
          - Between Tasks: ${bt.tasks} minutes
 
       4. FIXED APPOINTMENTS (Do not overlap with these):
-      ${JSON.stringify(appointments.map((a: any) => ({ 
+      ${JSON.stringify(appointments.map((a: AppointmentData) => ({ 
           name: a.name, 
           start: a.startTime, 
           end: a.endTime, 
@@ -43,7 +58,7 @@ export async function POST(request: Request) {
       })))}
 
       5. TASKS TO SCHEDULE (Fit these into empty slots):
-      ${JSON.stringify(tasks.map((t: any) => ({
+      ${JSON.stringify(tasks.map((t: TaskData) => ({
           name: t.taskName,
           duration: t.duration + " minutes",
           priority: t.priority,
@@ -89,10 +104,11 @@ export async function POST(request: Request) {
         }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
     console.error("API Error Detail:", error);
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
