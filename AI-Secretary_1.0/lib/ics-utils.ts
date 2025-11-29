@@ -6,12 +6,21 @@ export interface Appointment {
   endTime: string; // HH:mm
 }
 
+// Define interface to replace 'any'
+export interface ICSEvent {
+  id?: string;
+  taskName?: string;
+  name?: string;
+  startTime?: Date;
+  endTime?: Date;
+  [key: string]: unknown; // Allow other props
+}
+
 // Helper to format JS Date to ICS format (YYYYMMDDTHHmmSS) - Local Time
 function formatDateForICS(date: Date): string {
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return "";
 
-  // Get local components
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -19,16 +28,31 @@ function formatDateForICS(date: Date): string {
   const minutes = String(d.getMinutes()).padStart(2, "0");
   const seconds = String(d.getSeconds()).padStart(2, "0");
 
-  // Return YYYYMMDDTHHmmSS (No 'Z', implies local time)
   return `${year}${month}${day}T${hours}${minutes}${seconds}`;
 }
 
-export function generateICS(events: any[]): string {
-  let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AI Secretary//NONSGML v1.0//EN\nCALSCALE:GREGORIAN\n";
+export function generateICS(events: ICSEvent[]): string {
+  // 1. Detect Timezone
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+  let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//AI Secretary//NONSGML v1.0//EN
+CALSCALE:GREGORIAN
+BEGIN:VTIMEZONE
+TZID:${timeZone}
+BEGIN:STANDARD
+DTSTART:19700101T000000
+TZOFFSETFROM:+0000
+TZOFFSETTO:+0000
+TZNAME:${timeZone}
+END:STANDARD
+END:VTIMEZONE
+`;
 
   events.forEach((event) => {
     const summary = event.taskName || event.name || "Untitled";
-    const uid = event.id || crypto.randomUUID(); // Ensure UID for better import handling
+    const uid = event.id || crypto.randomUUID(); 
     
     let dtStart, dtEnd;
     
@@ -45,8 +69,8 @@ export function generateICS(events: any[]): string {
     icsContent += `UID:${uid}\n`;
     icsContent += `DTSTAMP:${formatDateForICS(new Date())}\n`;
     icsContent += `SUMMARY:${summary}\n`;
-    icsContent += `DTSTART:${dtStart}\n`;
-    icsContent += `DTEND:${dtEnd}\n`;
+    icsContent += `DTSTART;TZID=${timeZone}:${dtStart}\n`;
+    icsContent += `DTEND;TZID=${timeZone}:${dtEnd}\n`;
     icsContent += "END:VEVENT\n";
   });
 

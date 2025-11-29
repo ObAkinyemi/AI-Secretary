@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
-// Define interfaces to avoid 'any' types
+// Define input types
 interface AppointmentData {
   name: string;
   startTime: string;
@@ -23,13 +23,13 @@ export async function POST(request: Request) {
     const { tasks, appointments, rules, settings } = await request.json();
 
     if (!process.env.GOOGLE_API_KEY) {
+      console.error("[app/api/generate-schedule/route.ts] GEMINI_API_KEY is missing or incorrect.");
       return NextResponse.json(
-        { error: "Google API Key is missing in .env.local" },
+        { error: "Google API Key is missing or incorrect in .env.local" },
         { status: 500 }
       );
     }
 
-    // Use a standard, stable model
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const wh = settings?.workingHours || { start: "08:00", end: "22:00" };
@@ -97,8 +97,9 @@ export async function POST(request: Request) {
     try {
         const schedule = JSON.parse(cleanedText);
         return NextResponse.json({ schedule });
-    } catch (e) {
-        console.error("Failed to parse Gemini response:", text);
+    } catch {
+        // Removed unused 'e' variable here
+        console.error("[app/api/generate-schedule/route.ts] Failed to parse JSON response:", text);
         return NextResponse.json({ 
             error: "AI returned invalid JSON. Check server logs." 
         }, { status: 500 });
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
-    console.error("API Error Detail:", error);
+    console.error("[app/api/generate-schedule/route.ts] General API Error:", error);
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }
