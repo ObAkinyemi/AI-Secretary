@@ -1,0 +1,19 @@
+Wake up time is usually 0615. If there is time in between 0545 and the first fixed activity of the day, prayer can go there.
+There should be 15 minutes of buffer time before and after a fixed appointment and a task
+Bedtime is at 2230 every night. All activities must end before this time.
+I want to prepare for bedtime at 2145 every night. All activities must end at this time.
+Add a 15-minute buffer between all activities.
+Add a 1-hour dinner break each evening around 1800 or 1900.
+Add 15 minutes of Yoga at the end of each day (Mon-Thu)."
+No flexible task block/deadline block should be more than 1 hour long.
+The same task of the same subject OR type should NOT be put back to back.
+Be Flexible. You can move anything that is not a FIXED APPOINTMENT around to fit around these things. You must break them up and spread them throughout the week.
+Think of the time allocation as an allowance. You want to schedule the task so that the time allocation is met for that week, but not in one day.
+The chunks should be spread throughout the week not done at once.
+The 15-minute buffer rule will apply to all flexible tasks but not to back-to-back fixed appointments. I.e. if I have approximately 1 hour in between 2 fixed appointments, apply the buffer rule.
+Every task will have a range or how long I want to do the task. If the range of the chunk size is 30 minutes to 1 hour, that means if there are 30 minutes available for a flexible task, you can put it there. If there are 45 minutes for a flexible task you can put it there. The same for 1 hour. Prioritize fitting tasks into smaller time blocks for hyper flexibility.
+If you schedule the same subject back to back, then just make it one chunk.
+Work can be done during Laundry and CQ Shifts.
+Even if a task is composed of smaller time increments (like three 15-minute chunks), if I schedule those chunks consecutively, I must present them as a single, combined block of time in the final schedule. For example, three 15-minute reading sessions scheduled back-to-back should be displayed as one "45 min chunk."
+Calling people or hanging out with friends should only happen in the evening after 1700.
+In between a task and a fixed appointment I want 15 minutes of buffer time. In between a task and a task, I want 5-10 minutes of buffer time.
