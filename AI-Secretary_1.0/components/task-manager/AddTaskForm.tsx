@@ -147,7 +147,7 @@ export default function AddTaskForm({ initialData, onComplete, mode = "add" }: A
           <label className="block text-sm font-medium text-gray-300 mb-1">Priority</label>
           <select 
             value={priority}
-            onChange={e => setPriority(e.target.value as any)}
+            onChange={e => setPriority(e.target.value as Task["priority"])}
             className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white"
           >
             <option value="High">High</option>

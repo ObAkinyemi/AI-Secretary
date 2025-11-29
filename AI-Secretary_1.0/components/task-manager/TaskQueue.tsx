@@ -6,6 +6,15 @@ import { Upload, X } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import AddTaskForm from "./AddTaskForm";
 
+// Define shape for imported JSON task
+interface ImportedTask {
+  task_name?: string;
+  duration_minutes?: number;
+  min_chunk?: number;
+  max_chunk?: number;
+  days_to_complete?: number;
+}
+
 export default function TaskQueue() {
   const { tasks, setTasks, removeTask } = useSchedule();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,16 +34,16 @@ export default function TaskQueue() {
         if (!Array.isArray(json)) throw new Error("File must contain an array of tasks");
         
         // Basic validation
-        const validTasks = json.filter((t: any) => t.task_name && t.duration_minutes);
+        const validTasks = json.filter((t: ImportedTask) => t.task_name && t.duration_minutes);
         if (validTasks.length < json.length) {
             alert("Some tasks were skipped due to missing task_name or duration_minutes");
         }
 
         // Convert to internal format
-        const newTasks: Task[] = validTasks.map((t: any) => ({
+        const newTasks: Task[] = validTasks.map((t: ImportedTask) => ({
           id: crypto.randomUUID(),
-          taskName: t.task_name,
-          duration: t.duration_minutes,
+          taskName: t.task_name || "Untitled",
+          duration: t.duration_minutes || 60,
           minChunk: t.min_chunk || 30,
           maxChunk: t.max_chunk || 120,
           dueDateDays: t.days_to_complete || null,
@@ -43,7 +52,7 @@ export default function TaskQueue() {
         }));
 
         setTasks([...tasks, ...newTasks]);
-      } catch (err) {
+      } catch {
         alert("Invalid JSON file");
       }
     };

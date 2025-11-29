@@ -10,8 +10,18 @@ import { ArrowRight, Loader2 } from "lucide-react";
 interface ScheduledBlock {
   id: string;
   name: string;
-  startTime: string | Date; 
-  endTime: string | Date;   
+  startTime: Date; // Changed to strictly Date
+  endTime: Date;   // Changed to strictly Date
+  type: "task" | "appointment";
+  isChunk?: boolean;
+}
+
+// Interface for API response (where dates are strings)
+interface ApiScheduledBlock {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
   type: "task" | "appointment";
   isChunk?: boolean;
 }
@@ -46,23 +56,33 @@ export default function GenerateScheduleView() {
         throw new Error(data.error || "Failed to generate schedule");
       }
       
+      // Transform Appointments (State) -> ScheduledBlock
       const appointmentBlocks: ScheduledBlock[] = appointments.map(a => ({
           id: a.id,
           name: a.name,
-          startTime: `${a.date}T${a.startTime}:00`, 
-          endTime: `${a.date}T${a.endTime}:00`,
+          // Construct Date objects safely
+          startTime: new Date(`${a.date}T${a.startTime}:00`), 
+          endTime: new Date(`${a.date}T${a.endTime}:00`),
           type: "appointment"
       }));
 
-      const combined = [...appointmentBlocks, ...data.schedule].sort((a, b) => 
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-      );
+      // Transform API Response (Strings) -> ScheduledBlock (Dates)
+      const aiBlocks: ScheduledBlock[] = (data.schedule || []).map((b: ApiScheduledBlock) => ({
+        ...b,
+        startTime: new Date(b.startTime),
+        endTime: new Date(b.endTime)
+      }));
+
+      const combined = [...appointmentBlocks, ...aiBlocks].sort((a, b) => {
+        return a.startTime.getTime() - b.startTime.getTime();
+      });
 
       setGeneratedSchedule(combined);
 
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setError(e.message || "An error occurred while generating the schedule.");
+      const errorMessage = e instanceof Error ? e.message : "An error occurred while generating the schedule.";
+      setError(errorMessage);
     } finally {
       setIsGenerating(false);
     }
@@ -74,8 +94,8 @@ export default function GenerateScheduleView() {
      const eventsToExport = taskBlocks.map(b => ({
        id: b.id,
        taskName: b.name,
-       startTime: new Date(b.startTime),
-       endTime: new Date(b.endTime)
+       startTime: b.startTime, // Already a Date object
+       endTime: b.endTime      // Already a Date object
      }));
 
      const icsString = generateICS(eventsToExport);

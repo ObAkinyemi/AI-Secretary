@@ -26,7 +26,12 @@ export default function SettingsView() {
     setTimeout(() => setIsSaved(false), 2000);
   };
 
-  const updateField = (section: keyof SettingsState, field: string, value: any) => {
+  // Helper to update deeply nested settings safely
+  const updateField = <K extends keyof SettingsState>(
+    section: K, 
+    field: keyof SettingsState[K], 
+    value: SettingsState[K][keyof SettingsState[K]]
+  ) => {
     setLocalSettings(prev => ({
       ...prev,
       [section]: {
@@ -126,7 +131,7 @@ export default function SettingsView() {
                </div>
             </div>
             <div className="border-t border-gray-700 pt-4">
-                <label className="block text-sm text-gray-400 mb-2">Default Task Size  --- min chunk size --- max chunk size</label>
+                <label className="block text-sm text-gray-400 mb-2">Default Task Size (min)</label>
                 <div className="grid grid-cols-3 gap-2">
                     <input type="number" placeholder="Duration" value={localSettings.taskDefaults.duration} onChange={(e) => updateField('taskDefaults', 'duration', Number(e.target.value))} className="bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm" />
                     <input type="number" placeholder="Min Chunk" value={localSettings.taskDefaults.minChunk} onChange={(e) => updateField('taskDefaults', 'minChunk', Number(e.target.value))} className="bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm" />
@@ -184,7 +189,7 @@ export default function SettingsView() {
              </div>
              <div>
                 <label className="block text-sm text-gray-400 mb-1">Default View</label>
-                <select value={localSettings.calendar.view} onChange={(e) => updateField('calendar', 'view', e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
+                <select value={localSettings.calendar.view} onChange={(e) => updateField('calendar', 'view', e.target.value as "Day" | "Week" | "Agenda")} className="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white">
                     <option value="Day">Day</option>
                     <option value="Week">Week</option>
                     <option value="Agenda">Agenda</option>

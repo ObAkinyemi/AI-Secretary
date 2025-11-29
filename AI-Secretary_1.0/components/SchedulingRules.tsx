@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import { Plus, Upload, X } from "lucide-react";
 import { useSchedule } from "@/context/ScheduleContext";
 
