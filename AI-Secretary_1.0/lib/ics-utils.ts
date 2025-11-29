@@ -6,18 +6,47 @@ export interface Appointment {
   endTime: string; // HH:mm
 }
 
+// Helper to format JS Date to ICS format (YYYYMMDDTHHmmSS) - Local Time
+function formatDateForICS(date: Date): string {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return "";
+
+  // Get local components
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const seconds = String(d.getSeconds()).padStart(2, "0");
+
+  // Return YYYYMMDDTHHmmSS (No 'Z', implies local time)
+  return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+}
+
 export function generateICS(events: any[]): string {
-  let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AI Secretary//NONSGML v1.0//EN\n";
+  let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//AI Secretary//NONSGML v1.0//EN\nCALSCALE:GREGORIAN\n";
 
   events.forEach((event) => {
-    // Determine if it's a Task (has taskName) or Appointment (has name)
     const summary = event.taskName || event.name || "Untitled";
+    const uid = event.id || crypto.randomUUID(); // Ensure UID for better import handling
     
-    // Simple VEVENT generation
+    let dtStart, dtEnd;
+    
+    if (event.startTime && event.endTime) {
+        dtStart = formatDateForICS(event.startTime);
+        dtEnd = formatDateForICS(event.endTime);
+    } else {
+        const now = new Date();
+        dtStart = formatDateForICS(now);
+        dtEnd = formatDateForICS(now);
+    }
+
     icsContent += "BEGIN:VEVENT\n";
+    icsContent += `UID:${uid}\n`;
+    icsContent += `DTSTAMP:${formatDateForICS(new Date())}\n`;
     icsContent += `SUMMARY:${summary}\n`;
-    icsContent += `DTSTART:${formatDateForICS(new Date())}\n`; // Placeholder date logic
-    icsContent += `DTEND:${formatDateForICS(new Date())}\n`;   // Placeholder date logic
+    icsContent += `DTSTART:${dtStart}\n`;
+    icsContent += `DTEND:${dtEnd}\n`;
     icsContent += "END:VEVENT\n";
   });
 
@@ -25,15 +54,9 @@ export function generateICS(events: any[]): string {
   return icsContent;
 }
 
-// Helper to format JS Date to ICS format (YYYYMMDDTHHmmSS)
-function formatDateForICS(date: Date): string {
-  return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-}
-
 export function parseICS(fileContent: string): Appointment[] {
   const appointments: Appointment[] = [];
   
-  // 1. Unfold lines (Outlook splits long lines with a space on the next line)
   const unfoldedContent = fileContent.replace(/\r\n /g, "").replace(/\n /g, "");
   const lines = unfoldedContent.split(/\r\n|\n|\r/);
   
@@ -49,7 +72,6 @@ export function parseICS(fileContent: string): Appointment[] {
 
     if (line.startsWith('END:VEVENT')) {
       inEvent = false;
-      // Only add if we successfully parsed the start date
       if (currentEvent && currentEvent.name && currentEvent.date) {
          appointments.push(currentEvent as Appointment);
       }
@@ -58,16 +80,13 @@ export function parseICS(fileContent: string): Appointment[] {
     }
 
     if (inEvent && currentEvent) {
-      // Parse SUMMARY (Name)
       if (line.startsWith('SUMMARY')) {
-        // Handle SUMMARY:Name or SUMMARY;LANGUAGE=en-us:Name
         const parts = line.split(':');
         if (parts.length > 1) {
-            currentEvent.name = parts.slice(1).join(':'); // Rejoin in case name has colons
+            currentEvent.name = parts.slice(1).join(':'); 
         }
       }
 
-      // Parse DTSTART (Start Time)
       if (line.startsWith('DTSTART')) {
           const val = getValue(line);
           if (val) {
@@ -77,7 +96,6 @@ export function parseICS(fileContent: string): Appointment[] {
           }
       }
 
-      // Parse DTEND (End Time)
       if (line.startsWith('DTEND')) {
           const val = getValue(line);
           if (val) {
@@ -91,30 +109,24 @@ export function parseICS(fileContent: string): Appointment[] {
   return appointments;
 }
 
-// Helper to extract value after the first colon
 function getValue(line: string): string {
     const idx = line.indexOf(':');
     if (idx === -1) return "";
     return line.substring(idx + 1);
 }
 
-// Helper to parse ICS date strings (e.g., 20251128T103000 or 20251126)
 function parseICSDate(val: string): { date: string, time: string } {
-    // Case 1: Date-only (e.g., 20251126) - usually "All Day" events
     if (val.length === 8) {
         return {
             date: `${val.substring(0,4)}-${val.substring(4,6)}-${val.substring(6,8)}`,
             time: "00:00"
         };
     }
-
-    // Case 2: DateTime (e.g., 20251128T103000)
     if (val.length >= 15) {
         return {
             date: `${val.substring(0,4)}-${val.substring(4,6)}-${val.substring(6,8)}`,
             time: `${val.substring(9,11)}:${val.substring(11,13)}`
         };
     }
-
     return { date: "", time: "" };
 }

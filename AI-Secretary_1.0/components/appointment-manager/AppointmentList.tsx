@@ -42,7 +42,7 @@ export default function AppointmentList() {
   const closeModal = () => { setSelectedApt(null); setModalMode(null); };
 
   return (
-    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg h-full flex flex-col">
+    <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg h-full flex flex-col max-h-[600px]">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-white">Appointment List</h2>
         <div className="flex gap-2">
@@ -68,7 +68,7 @@ export default function AppointmentList() {
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto space-y-2 pr-2">
+      <div className="flex-grow overflow-y-auto space-y-2 pr-2 custom-scrollbar">
         {appointments.length === 0 ? (
             <p className="text-gray-500 text-center mt-10">Your appointments will appear here...</p>
         ) : (

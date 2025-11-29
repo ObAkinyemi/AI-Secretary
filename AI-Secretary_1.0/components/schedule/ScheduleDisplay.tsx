@@ -28,7 +28,7 @@ export default function ScheduleDisplay({ schedule }: Props) {
       
       <div className="divide-y divide-gray-700">
         {schedule.map((block) => {
-          // Safety check for dates
+          // Safety check: ensure we have real Date objects
           const start = block.startTime instanceof Date ? block.startTime : new Date(block.startTime);
           const end = block.endTime instanceof Date ? block.endTime : new Date(block.endTime);
 
@@ -39,8 +39,11 @@ export default function ScheduleDisplay({ schedule }: Props) {
                 block.type === "appointment" ? "bg-gray-800/50 opacity-75" : "bg-blue-900/10"
               }`}
             >
-              {/* Time Column */}
-              <div className="flex flex-col items-center min-w-[4.5rem] text-sm">
+              {/* Time Column with Date */}
+              <div className="flex flex-col items-center min-w-[5rem] text-sm text-center">
+                <span className="text-gray-500 text-xs font-semibold mb-1">
+                  {!isNaN(start.getTime()) ? start.toLocaleDateString([], { month: 'short', day: 'numeric' }) : "--"}
+                </span>
                 <span className="text-white font-medium">
                   {!isNaN(start.getTime()) ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : "--:--"}
                 </span>

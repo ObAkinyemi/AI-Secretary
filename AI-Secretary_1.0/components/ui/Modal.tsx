@@ -17,7 +17,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Dimmed Background (40% brightness reduction equivalent) */}
       <div 
-        className="absolute inset-0 bg-black bg-opacity-40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black bg-opacity-90 backdrop-blur-sm"
         onClick={onClose}
       />
       

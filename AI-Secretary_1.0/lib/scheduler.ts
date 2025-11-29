@@ -10,7 +10,6 @@ export interface ScheduledBlock {
   isChunk?: boolean;
 }
 
-// Helper to parse "HH:mm" to a Date object for Today (or specific date)
 function parseTime(timeStr: string, baseDate: Date = new Date()): Date {
   const [hours, minutes] = timeStr.split(":").map(Number);
   const date = new Date(baseDate);
@@ -21,23 +20,19 @@ function parseTime(timeStr: string, baseDate: Date = new Date()): Date {
 export function runScheduler(
   tasks: Task[],
   appointments: Appointment[],
-  rules: string[] // Rules are unused in local algo, but passed for future AI expansion
+  rules: string[]
 ): ScheduledBlock[] {
   const schedule: ScheduledBlock[] = [];
   
-  // 1. Convert Appointments to ScheduledBlocks
-  // For this MVP, we assume scheduling for "Today" or the date of the first appointment found
-  // To keep it simple, we will normalize everything to a single timeline (e.g., today) 
-  // or respect the specific dates if provided.
-  
-  // Let's assume we are scheduling for the date specified in the appointments, 
-  // or "Today" if no appointments exist.
+  // 1. Determine Schedule Date (First appointment date or Today)
   const today = new Date();
-  const scheduleDateStr = appointments.length > 0 ? appointments[0].date : today.toISOString().split("T")[0];
+  // Ensure we format the date string safely (YYYY-MM-DD) for filtering
+  const todayStr = today.toISOString().split("T")[0]; 
+  const scheduleDateStr = appointments.length > 0 ? appointments[0].date : todayStr;
 
-  // Map Appointments
+  // 2. Map Appointments to Blocks
   const fixedBlocks: ScheduledBlock[] = appointments
-    .filter(a => a.date === scheduleDateStr) // Only schedule for the primary day found
+    .filter(a => a.date === scheduleDateStr)
     .map(a => ({
       id: a.id,
       name: a.name,
@@ -48,91 +43,89 @@ export function runScheduler(
 
   schedule.push(...fixedBlocks);
 
-  // 2. Sort Fixed Blocks by time
+  // 3. Sort Fixed Blocks by time
   fixedBlocks.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
-  // 3. Define Working Hours (e.g., 8:00 AM to 10:00 PM)
-  // In a real app, this would be a setting.
+  // 4. Define Working Hours
   const dayStart = parseTime("08:00", new Date(scheduleDateStr));
   const dayEnd = parseTime("22:00", new Date(scheduleDateStr));
 
-  // 4. Identify Free Time Windows
-  const freeWindows: { start: Date, end: Date }[] = [];
+  // 5. Identify Free Time Windows
+  // We use 'let' because we will modify these windows as we fill them
+  let freeWindows: { start: Date, end: Date }[] = [];
   let currentTime = dayStart;
 
   for (const block of fixedBlocks) {
     if (block.startTime > currentTime) {
-      freeWindows.push({ start: currentTime, end: block.startTime });
+      freeWindows.push({ start: new Date(currentTime), end: new Date(block.startTime) });
     }
-    // Move current time to end of block if it's later
     if (block.endTime > currentTime) {
       currentTime = block.endTime;
     }
   }
-  // Add final window after last appointment
   if (currentTime < dayEnd) {
-    freeWindows.push({ start: currentTime, end: dayEnd });
+    freeWindows.push({ start: new Date(currentTime), end: new Date(dayEnd) });
   }
 
-  // 5. Sort Tasks by Priority
+  // 6. Sort Tasks by Priority
   const priorityOrder = { "High": 3, "Medium": 2, "Low": 1, "Based on Due Date": 2 };
   const sortedTasks = [...tasks].sort((a, b) => {
+    // @ts-ignore
     return (priorityOrder[b.priority] || 1) - (priorityOrder[a.priority] || 1);
   });
 
-  // 6. Slot Tasks into Free Windows
+  // 7. Slot Tasks into Free Windows
   for (const task of sortedTasks) {
     let timeNeeded = task.duration; // minutes
 
+    // Iterate through windows to find space
     for (let i = 0; i < freeWindows.length; i++) {
       if (timeNeeded <= 0) break;
 
       const window = freeWindows[i];
-      const windowDuration = (window.end.getTime() - window.start.getTime()) / 60000; // minutes
+      const windowDuration = (window.end.getTime() - window.start.getTime()) / 60000;
 
       if (windowDuration <= 0) continue;
 
-      // Can we fit the whole task?
+      // Logic: Fit Whole Task OR Chunk
+      let timeToSchedule = 0;
+      let isChunk = false;
+
       if (windowDuration >= timeNeeded) {
-        const start = new Date(window.start);
-        const end = new Date(start.getTime() + timeNeeded * 60000);
-        
-        schedule.push({
-          id: task.id,
-          name: task.taskName,
-          startTime: start,
-          endTime: end,
-          type: "task"
-        });
+        // Fits completely
+        timeToSchedule = timeNeeded;
+      } else if (windowDuration >= task.minChunk) {
+        // Fits a chunk
+        timeToSchedule = windowDuration; // Take the whole window? Or just maxChunk?
+        // Let's cap it at maxChunk if defined, otherwise take available window
+        if (task.maxChunk && timeToSchedule > task.maxChunk) {
+            timeToSchedule = task.maxChunk;
+        }
+        isChunk = true;
+      }
 
-        // Update window start
-        window.start = end; 
-        timeNeeded = 0;
-      } 
-      // Can we fit a chunk? (Check minChunk)
-      else if (windowDuration >= task.minChunk) {
-        // Fit as much as we can (or up to maxChunk if implemented)
-        const chunkDuration = Math.min(windowDuration, timeNeeded);
-        
+      if (timeToSchedule > 0) {
         const start = new Date(window.start);
-        const end = new Date(start.getTime() + chunkDuration * 60000);
+        const end = new Date(start.getTime() + timeToSchedule * 60000);
 
         schedule.push({
-          id: `${task.id}-chunk-${i}`,
-          name: `${task.taskName} (Part)`,
+          id: isChunk ? `${task.id}-chunk-${i}` : task.id,
+          name: task.taskName + (isChunk ? " (Part)" : ""),
           startTime: start,
           endTime: end,
           type: "task",
-          isChunk: true
+          isChunk: isChunk
         });
 
-        // Update window start & reduce needed time
+        // CRITICAL FIX: Update the window start time!
+        // We modify the object in the array directly so the next iteration sees the new start time
         window.start = end;
-        timeNeeded -= chunkDuration;
+        
+        timeNeeded -= timeToSchedule;
       }
     }
   }
 
-  // 7. Final Sort by Start Time
+  // 8. Final Sort
   return schedule.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 }

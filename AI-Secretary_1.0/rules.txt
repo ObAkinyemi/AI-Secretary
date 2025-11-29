@@ -17,3 +17,4 @@ Work can be done during Laundry and CQ Shifts.
 Even if a task is composed of smaller time increments (like three 15-minute chunks), if I schedule those chunks consecutively, I must present them as a single, combined block of time in the final schedule. For example, three 15-minute reading sessions scheduled back-to-back should be displayed as one "45 min chunk."
 Calling people or hanging out with friends should only happen in the evening after 1700.
 In between a task and a fixed appointment I want 15 minutes of buffer time. In between a task and a task, I want 5-10 minutes of buffer time.
+A workout should happen only once in a day.

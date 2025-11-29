@@ -1,0 +1,122 @@
+[
+  {
+    "id": "0cab6a26-d3f9-4e34-a617-6ea49ddfa899",
+    "taskName": "Call Parents",
+    "duration": 90,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "High",
+    "category": "Personal"
+  },
+  {
+    "id": "ab63fc88-fd3f-4a5f-8697-f27d9be8341f",
+    "taskName": "Call Ani",
+    "duration": 30,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Low",
+    "category": "Personal"
+  },
+  {
+    "id": "7fcf3204-fbf2-4c93-af69-3445961ca43c",
+    "taskName": "Reading Response",
+    "duration": 60,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": 6,
+    "priority": "Based on Due Date",
+    "category": "Academic"
+  },
+  {
+    "id": "126975a2-c8e8-450b-8297-967d25e3aed9",
+    "taskName": "ICS",
+    "duration": 45,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Medium",
+    "category": "Academic"
+  },
+  {
+    "id": "46f1abe6-78ba-473e-843a-79aa409edbdd",
+    "taskName": "SoLT",
+    "duration": 30,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Medium",
+    "category": "Academic"
+  },
+  {
+    "id": "8906a1d2-5188-4ff0-b8fb-aff187232fa1",
+    "taskName": "Study Physics",
+    "duration": 120,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": 7,
+    "priority": "High",
+    "category": "Academic"
+  },
+  {
+    "id": "00fbcf79-89a8-4580-b576-abb0fc0b10fd",
+    "taskName": "Study ECE",
+    "duration": 120,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Medium",
+    "category": "Academic"
+  },
+  {
+    "id": "f9c4eef1-8e9d-4e02-a4da-793c71acdc2a",
+    "taskName": "Law Readings",
+    "duration": 60,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Medium",
+    "category": "Academic"
+  },
+  {
+    "id": "002bcc19-80a1-45c8-a1b9-6e63a4f2e6bb",
+    "taskName": "English Readings",
+    "duration": 60,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Medium",
+    "category": "Academic"
+  },
+  {
+    "id": "04cb1290-e9e8-4be8-aa11-b7ca6389de34",
+    "taskName": "Visit Friends",
+    "duration": 75,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "Medium",
+    "category": "Academic"
+  },
+  {
+    "id": "833f05e4-a5a3-4fbd-bb06-6d8f42599077",
+    "taskName": "Study English for Midterm",
+    "duration": 75,
+    "minChunk": 30,
+    "maxChunk": 120,
+    "dueDateDays": null,
+    "priority": "High",
+    "category": "Academic"
+  },
+  {
+    "id": "7003b30c-9709-450c-a067-69aa0a948b7b",
+    "taskName": "Workout",
+    "duration": 240,
+    "minChunk": 45,
+    "maxChunk": 60,
+    "dueDateDays": null,
+    "priority": "High",
+    "category": "Physical"
+  }
+]
