@@ -2,8 +2,6 @@
 
 # dependencies
 /node_modules
-./'UI mockup'
-./test-components
 /.pnp
 .pnp.*
 .yarn/*
@@ -41,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+'UI mockup'/
+test-components/
