@@ -6,6 +6,7 @@ import tempfile
 import tkinter as tk
 from tkinter import messagebox, ttk, filedialog
 from icalendar import Calendar, Event
+import pytz
 
 # --- CORE LOGIC (Outlook & Exporting) ---
 
@@ -15,16 +16,37 @@ def get_calendars_from_outlook():
     (The Sidebar UI), which ensures we find Group Calendars and Shared Calendars.
     """
     try:
-        outlook = win32com.client.Dispatch("Outlook.Application")
+        # 1. Try to grab existing Outlook instance
+        try:
+            outlook = win32com.client.GetActiveObject("Outlook.Application")
+        except:
+            # 2. If not running, try to launch it
+            print("Outlook not found running. Attempting to launch...")
+            outlook = win32com.client.Dispatch("Outlook.Application")
+            
+        # --- NEW: Force Outlook to be Visible ---
+        # If Outlook is minimized to tray or running headless, ActiveExplorer is None.
+        # We need to force a window to open so we can access the UI (Navigation Pane).
+        try:
+            namespace = outlook.GetNamespace("MAPI")
+            # Get default calendar folder
+            cal_folder = namespace.GetDefaultFolder(9) # 9 = olFolderCalendar
+            # Force it to display, which brings the main window up
+            cal_folder.Display()
+        except Exception as e:
+            print(f"Warning: Could not force Outlook window to open: {e}")
+
+        # Now try to grab the explorer
         explorer = outlook.ActiveExplorer()
         
         if not explorer:
-            raise Exception("No active Outlook window found. Please open Outlook and try again.")
+             raise Exception("Could not find active Outlook window. Please open Outlook manually.")
 
         try:
-            nav_module = explorer.NavigationPane.Modules.GetNavigationModule(1)
+            # 1 = olModuleCalendar (The Calendar Tab in the sidebar)
+            nav_module = explorer.NavigationPane.Modules.GetNavigationModule(1) 
         except Exception:
-            raise Exception("Could not access Calendar sidebar. Please switch to the Calendar view in Outlook and try again.")
+            raise Exception("Could not access Calendar sidebar. Please switch to the Calendar view in Outlook.")
 
         calendars = []
         seen_ids = set()
@@ -46,31 +68,42 @@ def get_calendars_from_outlook():
         return calendars
 
     except Exception as e:
+        # Check for specific "Server execution failed" error
+        if "-2146959355" in str(e):
+            raise Exception("Outlook is not responding (Server execution failed).\n\nSOLUTION:\n1. Close Outlook completely.\n2. Open Task Manager and end any 'OUTLOOK.EXE' processes.\n3. Restart Outlook and try again.")
         raise Exception(f"Could not access Outlook Sidebar.\nError: {e}")
 
 def export_manual_items(folder, start_date, end_date):
     """
-    Fallback method: Manually iterates through calendar items if the built-in exporter fails.
-    Useful for Internet Calendars or Shared Calendars.
+    Fallback method: Manually iterates through calendar items.
     """
     events = []
+    print(f"    Manual scan of '{folder.Name}' from {start_date} to {end_date}...")
+
     try:
-        # Get items and sort
         items = folder.Items
         items.Sort("[Start]")
-        items.IncludeRecurrences = True # Expand recurring events
+        items.IncludeRecurrences = True 
 
-        # Create filter string for Outlook Restrict method
-        # Outlook expects strings like "MM/DD/YYYY HH:MM AM"
-        s_str = start_date.strftime("%m/%d/%Y %I:%M %p")
-        e_str = end_date.strftime("%m/%d/%Y %I:%M %p")
-        
-        # Filter events strictly within range
-        restriction = f"[Start] >= '{s_str}' AND [End] <= '{e_str}'"
-        restricted_items = items.Restrict(restriction)
+        # We assume local timezone for the input dates to compare correctly
+        # Making them naive (no timezone) effectively compares them as "Outlook Local Time"
+        start_dt = datetime.datetime.combine(start_date, datetime.time.min)
+        end_dt = datetime.datetime.combine(end_date, datetime.time.max)
 
-        for item in restricted_items:
+        for item in items:
             try:
+                # Outlook items are timezone-naive (local time) by default in COM
+                item_start = item.Start
+                
+                # OPTIMIZATION: If item starts after our end date, stop scanning
+                if item_start.replace(tzinfo=None) > end_dt:
+                    break
+                
+                # Check if item is in range
+                if item.End.replace(tzinfo=None) < start_dt:
+                    continue
+
+                # If we are here, the item overlaps our range!
                 event = Event()
                 event.add('summary', item.Subject)
                 event.add('dtstart', item.Start)
@@ -78,12 +111,16 @@ def export_manual_items(folder, start_date, end_date):
                 
                 if item.Location:
                     event.add('location', item.Location)
-                if item.Body:
-                    event.add('description', item.Body)
+                
+                try:
+                    if item.Body:
+                        event.add('description', item.Body)
+                except:
+                    pass
                 
                 events.append(event)
             except Exception:
-                continue # Skip individual bad items
+                continue 
                 
     except Exception as e:
         print(f"    Manual fallback failed: {e}")
@@ -95,13 +132,17 @@ def run_export_process(selected_calendars, start_date, end_date, output_path):
     merged_calendar = Calendar()
     merged_calendar.add('prodid', '-//AI Secretary//Outlook Exporter//')
     merged_calendar.add('version', '2.0')
+    merged_calendar.add('calscale', 'GREGORIAN')
 
     with tempfile.TemporaryDirectory() as temp_dir:
         for calendar_folder in selected_calendars:
             print(f"Processing: {calendar_folder.Name}...")
             
-            # METHOD A: Try Outlook's Built-in Exporter (Fast, Standard)
+            # METHOD A: Try Outlook's Built-in Exporter
             try:
+                # Force failure for testing Manual Fallback? Uncomment next line:
+                # raise Exception("Force Manual")
+
                 exporter = calendar_folder.GetCalendarExporter()
                 exporter.IncludeWholeCalendar = False
                 exporter.StartDate = start_date
@@ -113,7 +154,6 @@ def run_export_process(selected_calendars, start_date, end_date, output_path):
                 temp_file_path = os.path.join(temp_dir, f"temp_{calendar_folder.Name}.ics")
                 exporter.SaveAsICal(temp_file_path)
                 
-                # Read back and merge
                 with open(temp_file_path, 'r', encoding='utf-8') as f:
                     temp_cal_data = f.read()
                     temp_cal = Calendar.from_ical(temp_cal_data)
@@ -121,18 +161,17 @@ def run_export_process(selected_calendars, start_date, end_date, output_path):
                         merged_calendar.add_component(component)
             
             except Exception as e:
-                # METHOD B: Manual Fallback (Slower, but works on weird calendars)
-                print(f"  Standard export failed ({e}). Attempting manual extraction...")
+                # METHOD B: Manual Fallback
+                print(f"  Standard export failed ({e}). Running manual extraction...")
                 manual_events = export_manual_items(calendar_folder, start_date, end_date)
                 
                 if manual_events:
-                    print(f"  Successfully manually extracted {len(manual_events)} events.")
+                    print(f"  Found {len(manual_events)} events manually.")
                     for event in manual_events:
                         merged_calendar.add_component(event)
                 else:
-                    print(f"  Could not extract events from {calendar_folder.Name}.")
+                    print(f"  No events found manually.")
 
-    # Save to the user-selected path
     with open(output_path, 'wb') as f:
         f.write(merged_calendar.to_ical())
     
